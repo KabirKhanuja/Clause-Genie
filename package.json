@@ -1,27 +1,21 @@
 {
-  "name": "clause-genie",
+  "name": "clause-genie-monorepo",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
-    "start": "next start",
+    "dev:web": "npm --workspace=@clause-genie/web run dev",
+    "dev:api": "npm --workspace=@clause-genie/api run dev",
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
+    "build:web": "npm --workspace=@clause-genie/web run build",
+    "build:api": "npm --workspace=@clause-genie/api run build",
+    "start:web": "npm --workspace=@clause-genie/web run start",
+    "start:api": "npm --workspace=@clause-genie/api run start",
     "lint": "eslint"
   },
-  "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.3"
-  },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.3",
-    "@eslint/eslintrc": "^3"
+    "concurrently": "^8.2.0"
   }
 }
