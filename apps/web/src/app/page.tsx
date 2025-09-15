@@ -9,6 +9,7 @@ export default function Home() {
       <Header />
       <main>
         <Hero />
+        
         <div className="max-w-5xl mx-auto px-8">
           <DomainCards />
         </div>
