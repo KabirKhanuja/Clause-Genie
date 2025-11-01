@@ -451,17 +451,29 @@ function Hero() {
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                             className: "flex items-center justify-center relative",
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "w-full max-w-md",
+                                className: "w-full max-w-md relative",
                                 children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                        alt: "genie",
+                                        src: "/images/genie-illustration.png",
+                                        className: "absolute right-[-20px] top-[-140px] md:top-[-180px] w-48 md:w-64 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none animate-float",
+                                        style: {
+                                            zIndex: 10
+                                        }
+                                    }, void 0, false, {
+                                        fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
+                                        lineNumber: 83,
+                                        columnNumber: 15
+                                    }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "panel p-6 rounded-2xl card-glow",
+                                        className: "panel p-6 rounded-2xl card-glow mt-32 md:mt-44",
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h4", {
                                                 className: "text-slate-300 text-sm mb-3",
                                                 children: "Quick summary"
                                             }, void 0, false, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 82,
+                                                lineNumber: 92,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -469,7 +481,7 @@ function Hero() {
                                                 children: "Upload a doc → Ask the Genie → Get clause-level answers"
                                             }, void 0, false, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 83,
+                                                lineNumber: 93,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -483,7 +495,7 @@ function Hero() {
                                                                 children: "Average parse"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 87,
+                                                                lineNumber: 99,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -491,13 +503,13 @@ function Hero() {
                                                                 children: "~3s"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 88,
+                                                                lineNumber: 100,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                        lineNumber: 86,
+                                                        lineNumber: 98,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -508,7 +520,7 @@ function Hero() {
                                                                 children: "Languages"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 91,
+                                                                lineNumber: 103,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -516,19 +528,19 @@ function Hero() {
                                                                 children: "Multi"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 92,
+                                                                lineNumber: 104,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                        lineNumber: 90,
+                                                        lineNumber: 102,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 85,
+                                                lineNumber: 97,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -536,36 +548,24 @@ function Hero() {
                                                 children: "Tip: Try “Does this policy cover theft?” after uploading."
                                             }, void 0, false, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 96,
+                                                lineNumber: 108,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                        lineNumber: 81,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
-                                        alt: "genie",
-                                        src: "/images/genie-illustration.png",
-                                        className: "absolute right-[-16px] top-[-40px] w-44 md:w-56 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none",
-                                        style: {
-                                            zIndex: 5
-                                        }
-                                    }, void 0, false, {
-                                        fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                        lineNumber: 100,
+                                        lineNumber: 91,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                lineNumber: 80,
+                                lineNumber: 81,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                            lineNumber: 79,
+                            lineNumber: 80,
                             columnNumber: 11
                         }, this)
                     ]

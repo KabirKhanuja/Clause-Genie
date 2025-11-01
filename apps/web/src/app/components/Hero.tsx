@@ -76,11 +76,23 @@ export default function Hero() {
             </div>
           </div>
 
+          {/* RIGHT COLUMN */}
           <div className="flex items-center justify-center relative">
-            <div className="w-full max-w-md">
-              <div className="panel p-6 rounded-2xl card-glow">
+            <div className="w-full max-w-md relative">
+              {/* Genie image ABOVE the card */}
+              <img
+                alt="genie"
+                src="/images/genie-illustration.png"
+                className="absolute right-[-20px] top-[-140px] md:top-[-180px] w-48 md:w-64 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none animate-float"
+                style={{ zIndex: 10 }}
+              />
+
+              {/* Quick summary CARD */}
+              <div className="panel p-6 rounded-2xl card-glow mt-32 md:mt-44">
                 <h4 className="text-slate-300 text-sm mb-3">Quick summary</h4>
-                <div className="text-white font-semibold text-lg">Upload a doc → Ask the Genie → Get clause-level answers</div>
+                <div className="text-white font-semibold text-lg">
+                  Upload a doc → Ask the Genie → Get clause-level answers
+                </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg bg-[#061026]/50">
@@ -93,16 +105,10 @@ export default function Hero() {
                   </div>
                 </div>
 
-                <div className="mt-4 text-slate-400 text-sm">Tip: Try “Does this policy cover theft?” after uploading.</div>
+                <div className="mt-4 text-slate-400 text-sm">
+                  Tip: Try “Does this policy cover theft?” after uploading.
+                </div>
               </div>
-
-              {/* Genie image positioned absolutely within this column (safe bounds) */}
-              <img
-                alt="genie"
-                src="/images/genie-illustration.png"
-                className="absolute right-[-16px] top-[-40px] w-44 md:w-56 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none"
-                style={{ zIndex: 5 }}
-              />
             </div>
           </div>
         </div>
