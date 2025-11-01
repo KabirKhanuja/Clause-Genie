@@ -8,7 +8,6 @@ export default function Header() {
     <header className="z-30 relative">
       <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg glow-btn flex items-center justify-center font-bold text-black">G</div>
           <div className="text-white font-semibold">Clause Genie</div>
         </div>
 

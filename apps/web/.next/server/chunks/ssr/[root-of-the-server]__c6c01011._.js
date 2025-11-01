@@ -47,25 +47,15 @@ function Header() {
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex items-center gap-3",
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "h-10 w-10 rounded-lg glow-btn flex items-center justify-center font-bold text-black",
-                                children: "G"
-                            }, void 0, false, {
-                                fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 11,
-                                columnNumber: 11
-                            }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "text-white font-semibold",
-                                children: "Clause Genie"
-                            }, void 0, false, {
-                                fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 12,
-                                columnNumber: 11
-                            }, this)
-                        ]
-                    }, void 0, true, {
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "text-white font-semibold",
+                            children: "Clause Genie"
+                        }, void 0, false, {
+                            fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
+                            lineNumber: 11,
+                            columnNumber: 11
+                        }, this)
+                    }, void 0, false, {
                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
                         lineNumber: 10,
                         columnNumber: 9
@@ -79,7 +69,7 @@ function Header() {
                                 children: "Home"
                             }, void 0, false, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 16,
+                                lineNumber: 15,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -88,7 +78,7 @@ function Header() {
                                 children: "Upload"
                             }, void 0, false, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 17,
+                                lineNumber: 16,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -97,7 +87,7 @@ function Header() {
                                 children: "Document"
                             }, void 0, false, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 18,
+                                lineNumber: 17,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -106,7 +96,7 @@ function Header() {
                                 children: "Genie"
                             }, void 0, false, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 19,
+                                lineNumber: 18,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -114,13 +104,13 @@ function Header() {
                                 children: "Get Started"
                             }, void 0, false, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 20,
+                                lineNumber: 19,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                        lineNumber: 15,
+                        lineNumber: 14,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -140,22 +130,22 @@ function Header() {
                                     strokeLinecap: "round"
                                 }, void 0, false, {
                                     fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                    lineNumber: 25,
+                                    lineNumber: 24,
                                     columnNumber: 73
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                                lineNumber: 25,
+                                lineNumber: 24,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                            lineNumber: 24,
+                            lineNumber: 23,
                             columnNumber: 11
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                        lineNumber: 23,
+                        lineNumber: 22,
                         columnNumber: 9
                     }, this)
                 ]
@@ -173,7 +163,7 @@ function Header() {
                         children: "Home"
                     }, void 0, false, {
                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                        lineNumber: 32,
+                        lineNumber: 31,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -182,7 +172,7 @@ function Header() {
                         children: "Upload"
                     }, void 0, false, {
                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                        lineNumber: 33,
+                        lineNumber: 32,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -191,7 +181,7 @@ function Header() {
                         children: "Document"
                     }, void 0, false, {
                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                        lineNumber: 34,
+                        lineNumber: 33,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -200,13 +190,13 @@ function Header() {
                         children: "Genie"
                     }, void 0, false, {
                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                        lineNumber: 35,
+                        lineNumber: 34,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Header.tsx",
-                lineNumber: 31,
+                lineNumber: 30,
                 columnNumber: 9
             }, this)
         ]
