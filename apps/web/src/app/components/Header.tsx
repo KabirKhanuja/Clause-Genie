@@ -1,21 +1,40 @@
 'use client';
 import Link from 'next/link';
+import { useState } from 'react';
 
 export default function Header() {
+  const [open, setOpen] = useState(false);
   return (
-    <header className="flex items-center justify-between px-8 py-5">
-      <div className="flex items-center gap-3 text-white">
-        <div className="h-8 w-8 rounded-md bg-gradient-to-br from-[#13a4ec] to-[#00f2ea] flex items-center justify-center text-black font-bold">G</div>
-        <h1 className="text-white text-lg font-bold">Clause Genie</h1>
+    <header className="z-30 relative">
+      <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg glow-btn flex items-center justify-center font-bold text-black">G</div>
+          <div className="text-white font-semibold">Clause Genie</div>
+        </div>
+
+        <nav className="hidden md:flex items-center gap-6 text-slate-300">
+          <Link href="/" className="hover:text-white transition">Home</Link>
+          <Link href="/upload" className="hover:text-white transition">Upload</Link>
+          <Link href="/view" className="hover:text-white transition">Document</Link>
+          <Link href="/chat" className="hover:text-white transition">Genie</Link>
+          <button className="ml-4 px-4 py-2 rounded-full text-black glow-btn">Get Started</button>
+        </nav>
+
+        <div className="md:hidden">
+          <button onClick={()=>setOpen(!open)} className="p-2 rounded-md bg-white/5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
       </div>
 
-      <nav className="flex items-center gap-6">
-        <Link href="/" className="text-slate-300 hover:text-[#00f2ea]">Home</Link>
-        <Link href="/upload" className="text-slate-300 hover:text-[#00f2ea]">Upload</Link>
-        <Link href="/view" className="text-slate-300 hover:text-[#00f2ea]">Document</Link>
-        <Link href="/chat" className="text-slate-300 hover:text-[#00f2ea]">Genie</Link>
-        <button className="ml-4 rounded-full px-4 py-2 bg-gradient-to-r from-[#13a4ec] to-[#00f2ea] text-white font-semibold">Get Started</button>
-      </nav>
+      {open && (
+        <div className="md:hidden bg-[#051125]/80 border-t border-slate-700/40 px-4 py-4">
+          <Link href="/" className="block py-2 text-slate-200">Home</Link>
+          <Link href="/upload" className="block py-2 text-slate-200">Upload</Link>
+          <Link href="/view" className="block py-2 text-slate-200">Document</Link>
+          <Link href="/chat" className="block py-2 text-slate-200">Genie</Link>
+        </div>
+      )}
     </header>
   );
 }

@@ -5,14 +5,11 @@ import Footer from './components/Footer';
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#03030a]">
       <Header />
       <main>
         <Hero />
-        
-        <div className="max-w-5xl mx-auto px-8">
-          <DomainCards />
-        </div>
+        <DomainCards />
       </main>
       <Footer />
     </div>
