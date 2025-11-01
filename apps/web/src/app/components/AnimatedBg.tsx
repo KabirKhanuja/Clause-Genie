@@ -52,5 +52,5 @@ export default function AnimatedBg() {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
   }, []);
 
-  return <canvas ref={ref} className="particle-canvas" />;
+  return <canvas ref={ref} className="particle-canvas" style={{ zIndex: 0 }} />;
 }

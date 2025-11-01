@@ -281,7 +281,10 @@ function AnimatedBg() {
     }, []);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("canvas", {
         ref: ref,
-        className: "particle-canvas"
+        className: "particle-canvas",
+        style: {
+            zIndex: 0
+        }
     }, void 0, false, {
         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/AnimatedBg.tsx",
         lineNumber: 55,
@@ -312,130 +315,143 @@ const DOMAINS = [
 function Hero() {
     const [picked, setPicked] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
-        className: "relative overflow-hidden",
+        className: "relative overflow-hidden bg-transparent min-h-[72vh] md:min-h-screen flex items-center",
+        "aria-label": "Hero",
         children: [
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$apps$2f$web$2f$src$2f$app$2f$components$2f$AnimatedBg$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "absolute inset-0 z-0 pointer-events-none",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$apps$2f$web$2f$src$2f$app$2f$components$2f$AnimatedBg$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
+                        fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
+                        lineNumber: 17,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        "aria-hidden": true,
+                        className: "blob",
+                        style: {
+                            width: 360,
+                            height: 360,
+                            left: '6%',
+                            top: '8%',
+                            background: 'radial-gradient(circle at 30% 30%, rgba(19,164,236,0.85), rgba(138,43,226,0.35))',
+                            animation: 'blob 12s ease-in-out infinite',
+                            zIndex: 0
+                        }
+                    }, void 0, false, {
+                        fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
+                        lineNumber: 18,
+                        columnNumber: 9
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        "aria-hidden": true,
+                        className: "blob",
+                        style: {
+                            width: 300,
+                            height: 300,
+                            right: '4%',
+                            bottom: '12%',
+                            background: 'radial-gradient(circle at 70% 70%, rgba(0,242,234,0.6), rgba(138,43,226,0.28))',
+                            animation: 'blob 16s ease-in-out infinite',
+                            zIndex: 0
+                        }
+                    }, void 0, false, {
+                        fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
+                        lineNumber: 32,
+                        columnNumber: 9
+                    }, this)
+                ]
+            }, void 0, true, {
                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                lineNumber: 12,
+                lineNumber: 16,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                "aria-hidden": true,
-                className: "blob",
-                style: {
-                    width: 420,
-                    height: 420,
-                    left: '8%',
-                    top: '12%',
-                    background: 'radial-gradient(circle at 30% 30%, rgba(19,164,236,0.85), rgba(138,43,226,0.4))',
-                    animation: 'blob 10s linear infinite'
-                }
-            }, void 0, false, {
-                fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                lineNumber: 14,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                "aria-hidden": true,
-                className: "blob",
-                style: {
-                    width: 360,
-                    height: 360,
-                    right: '6%',
-                    bottom: '14%',
-                    background: 'radial-gradient(circle at 70% 70%, rgba(0,242,234,0.65), rgba(138,43,226,0.28))',
-                    animation: 'blob 14s linear infinite'
-                }
-            }, void 0, false, {
-                fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                lineNumber: 15,
-                columnNumber: 7
-            }, this),
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "max-w-7xl mx-auto px-8 py-28 relative z-10",
+                className: "relative z-10 max-w-7xl mx-auto px-6 md:px-8 w-full",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "grid grid-cols-1 md:grid-cols-2 gap-12 items-center",
+                    className: "grid grid-cols-1 md:grid-cols-2 gap-8 items-center",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            className: "pt-8 md:pt-0",
                             children: [
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                                    className: "text-white text-5xl md:text-6xl font-extrabold leading-tight drop-shadow-[0_8px_30px_rgba(0,0,0,0.6)]",
+                                    className: "text-white text-4xl md:text-6xl lg:text-7xl font-extrabold leading-tight",
                                     children: [
-                                        "Wanna understand and break down your complex documents? ",
+                                        "Wanna understand and break down your complex documents?",
+                                        ' ',
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                             className: "text-transparent bg-clip-text bg-gradient-to-r from-[#13a4ec] to-[#8a2be2]",
                                             children: "Ask Genie ✨"
                                         }, void 0, false, {
                                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                            lineNumber: 21,
-                                            columnNumber: 71
+                                            lineNumber: 54,
+                                            columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                    lineNumber: 20,
+                                    lineNumber: 52,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                    className: "mt-6 text-slate-300 max-w-xl",
+                                    className: "mt-6 text-slate-300 max-w-xl text-lg",
                                     children: "Upload contracts, policies or reports and get clause-level insights, visual diagrams and contextual answers — all in one ephemeral session."
                                 }, void 0, false, {
                                     fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                    lineNumber: 23,
+                                    lineNumber: 57,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "mt-8 flex gap-3 flex-wrap",
+                                    className: "mt-8 flex flex-wrap gap-3",
                                     children: DOMAINS.map((d)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                             onClick: ()=>setPicked(d),
-                                            className: `domain-btn px-5 py-3 text-white font-medium ${picked === d ? 'ring-2 ring-offset-2 ring-[#13a4ec]/40 scale-105' : ''}`,
-                                            "aria-pressed": picked === d,
+                                            className: `domain-btn px-4 py-3 text-white font-medium ${picked === d ? 'ring-2 ring-offset-2 ring-[#13a4ec]/40 scale-105' : ''}`,
                                             children: d
                                         }, d, false, {
                                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                            lineNumber: 29,
+                                            lineNumber: 63,
                                             columnNumber: 17
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                    lineNumber: 27,
+                                    lineNumber: 61,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                    className: "mt-6 flex gap-3 items-center",
+                                    className: "mt-6 flex items-center gap-4",
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                                             className: "glow-btn px-5 py-3 rounded-full font-semibold text-black",
                                             children: "Upload Document"
                                         }, void 0, false, {
                                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                            lineNumber: 41,
+                                            lineNumber: 74,
                                             columnNumber: 15
                                         }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
-                                            className: "text-sm text-slate-400 ml-3",
+                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            className: "text-sm text-slate-400",
                                             children: "Try demo documents • Session-only"
                                         }, void 0, false, {
                                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                            lineNumber: 42,
+                                            lineNumber: 75,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                    lineNumber: 40,
+                                    lineNumber: 73,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                            lineNumber: 19,
+                            lineNumber: 51,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                            className: "flex items-center justify-center",
+                            className: "flex items-center justify-center relative",
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "w-full max-w-md relative",
+                                className: "w-full max-w-md",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                         className: "panel p-6 rounded-2xl card-glow",
@@ -445,7 +461,7 @@ function Hero() {
                                                 children: "Quick summary"
                                             }, void 0, false, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 49,
+                                                lineNumber: 82,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -453,7 +469,7 @@ function Hero() {
                                                 children: "Upload a doc → Ask the Genie → Get clause-level answers"
                                             }, void 0, false, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 50,
+                                                lineNumber: 83,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -467,7 +483,7 @@ function Hero() {
                                                                 children: "Average parse"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 54,
+                                                                lineNumber: 87,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -475,13 +491,13 @@ function Hero() {
                                                                 children: "~3s"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 55,
+                                                                lineNumber: 88,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                        lineNumber: 53,
+                                                        lineNumber: 86,
                                                         columnNumber: 19
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -492,7 +508,7 @@ function Hero() {
                                                                 children: "Languages"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 58,
+                                                                lineNumber: 91,
                                                                 columnNumber: 21
                                                             }, this),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -500,19 +516,19 @@ function Hero() {
                                                                 children: "Multi"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                                lineNumber: 59,
+                                                                lineNumber: 92,
                                                                 columnNumber: 21
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                        lineNumber: 57,
+                                                        lineNumber: 90,
                                                         columnNumber: 19
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 52,
+                                                lineNumber: 85,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -520,44 +536,47 @@ function Hero() {
                                                 children: "Tip: Try “Does this policy cover theft?” after uploading."
                                             }, void 0, false, {
                                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                                lineNumber: 63,
+                                                lineNumber: 96,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                        lineNumber: 48,
+                                        lineNumber: 81,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$My_drive$2f$VIT$2f$SY$2f$SEM1$2f$EDI$2f$clause$2d$genie$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
                                         alt: "genie",
-                                        src: "/genie-illustration.png",
-                                        className: "absolute right-[-40px] top-[-70px] w-44 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
+                                        src: "/images/genie-illustration.png",
+                                        className: "absolute right-[-16px] top-[-40px] w-44 md:w-56 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none",
+                                        style: {
+                                            zIndex: 5
+                                        }
                                     }, void 0, false, {
                                         fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                        lineNumber: 66,
+                                        lineNumber: 100,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                                lineNumber: 47,
+                                lineNumber: 80,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                            lineNumber: 46,
+                            lineNumber: 79,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                    lineNumber: 18,
+                    lineNumber: 50,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/My_drive/VIT/SY/SEM1/EDI/clause-genie/apps/web/src/app/components/Hero.tsx",
-                lineNumber: 17,
+                lineNumber: 49,
                 columnNumber: 7
             }, this)
         ]
