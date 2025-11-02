@@ -17,72 +17,79 @@ export default function IntroHero() {
 
   useEffect(() => {
     if (!containerRef.current) return;
-    // respect prefers-reduced-motion
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) {
-      // apply final state quickly
-      gsap.set([eyeL.current, eyeR.current], { attr: { d: 'M30 48 q20 -5 40 0' }});
-      gsap.set(mouth.current, { attr: { d: 'M50 88 q40 60 80 0' }, opacity: 1 });
-      gsap.set(textEl.current, { attr: { 'font-size': 28 }});
+      gsap.set([eyeL.current, eyeR.current], { attr: { d: 'M48 58 q18 -8 36 0' }});
+      gsap.set(mouth.current, { attr: { d: 'M55 100 q45 56 90 0' }, opacity: 1 });
+      gsap.set(textEl.current, { attr: { 'font-size': 36 }});
       gsap.set(ctaBtn.current, { opacity: 1, y: 0 });
       return;
     }
 
-    // create timeline controlled by scroll
+    // clear existing triggers if any (helps on HMR)
+    ScrollTrigger.getAll().forEach(t => t.kill());
+
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: containerRef.current,
         start: 'top top',
-        end: '+=700',
+        end: '+=600',    // less scroll distance for snappier animation
         scrub: 0.6,
         pin: true,
-        anticipatePin: 1
+        anticipatePin: 0.5
       }
     });
 
-    // Eyes: small arc -> wider arc (simulate opening)
-    tl.to(eyeL.current, { attr: { d: 'M30 40 q20 -5 40 0' }, duration: 0.6 }, 0);
-    tl.to(eyeR.current, { attr: { d: 'M110 40 q20 -5 40 0' }, duration: 0.6 }, 0);
+    // Make text shrink modestly (not massive)
+    tl.to(textEl.current, { attr: { 'font-size': 36 }, duration: 0.6 }, 0);
 
-    // Text: shrink slightly
-    tl.to(textEl.current, { attr: { 'font-size': 28 }, duration: 0.6 }, 0.15);
+    // Eyes open: gentle arc change
+    tl.to(eyeL.current, { attr: { d: 'M48 58 q18 -8 36 0' }, duration: 0.6, ease: 'power1.out' }, 0.12);
+    tl.to(eyeR.current, { attr: { d: 'M124 58 q18 -8 36 0' }, duration: 0.6, ease: 'power1.out' }, 0.12);
 
-    // Mouth opens (line -> big arc)
-    tl.to(mouth.current, { attr: { d: 'M50 88 q40 60 80 0' }, duration: 0.8 }, 0.6);
+    // Mouth opens a little later
+    tl.to(mouth.current, { attr: { d: 'M55 100 q45 56 90 0' }, duration: 0.8, ease: 'power2.out' }, 0.5);
 
-    // Reveal CTA
-    tl.fromTo(ctaBtn.current, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45 }, 0.95);
+    // CTA reveals from below (mouth area)
+    tl.fromTo(ctaBtn.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power1.out' }, 0.95);
 
     return () => {
       tl.kill();
-      ScrollTrigger.getAll().forEach((t) => t.kill());
+      ScrollTrigger.getAll().forEach(t => t.kill());
     };
   }, []);
 
   return (
     <section ref={containerRef} className={styles.wrapper} aria-label="Intro animation">
       <div className={styles.center}>
-        <svg viewBox="0 0 200 140" className={styles.face} aria-hidden>
-          <text ref={textEl as any} x="12" y="26" fontSize="40" fill="#2f6fb8" fontWeight="700">CLAUSE GENIE</text>
-          <line x1="0" x2="200" y1="60" y2="60" stroke="#2f6fb8" strokeWidth="1" opacity="0.45" />
+        {/* tuned viewBox & scaled layout so font + shapes fit well */}
+        <svg viewBox="0 0 220 140" className={styles.face} aria-hidden>
+          {/* headline — smaller so it won't overflow */}
+          <text ref={textEl as any} x="12" y="28" fontSize="44" fill="#2f6fb8" fontWeight="700" letterSpacing="0.5">CLAUSE GENIE</text>
 
-          {/* Eyes (initial small arcs) */}
-          <path ref={eyeL as any} d="M30 48 q20 -15 40 0" stroke="#2f6fb8" strokeWidth="2" fill="none" strokeLinecap="round"/>
-          <path ref={eyeR as any} d="M110 48 q20 -15 40 0" stroke="#2f6fb8" strokeWidth="2" fill="none" strokeLinecap="round"/>
+          {/* eyebrow-ish lines (eyes closed initial) */}
+          <path d="M50 50 q20 -10 40 0" stroke="#2f6fb8" strokeWidth="2.8" fill="none" strokeLinecap="round" opacity="0.95" />
+          <path d="M126 50 q20 -10 40 0" stroke="#2f6fb8" strokeWidth="2.8" fill="none" strokeLinecap="round" opacity="0.95" />
 
-          {/* Mouth (closed line initially) */}
-          <path ref={mouth as any} d="M50 80 q40 0 80 0" stroke="#2f6fb8" strokeWidth="2" fill="none" strokeLinecap="round" opacity="1"/>
+          {/* baseline */}
+          <line x1="8" x2="212" y1="66" y2="66" stroke="#2f6fb8" strokeWidth="1.4" opacity="0.45" />
+
+          {/* Eyes (start slightly more closed) */}
+          <path ref={eyeL as any} d="M48 62 q18 -14 36 0" stroke="#2f6fb8" strokeWidth="3" fill="none" strokeLinecap="round"/>
+          <path ref={eyeR as any} d="M124 62 q18 -14 36 0" stroke="#2f6fb8" strokeWidth="3" fill="none" strokeLinecap="round"/>
+
+          {/* Mouth (small line to start) */}
+          <path ref={mouth as any} d="M62 92 q46 0 92 0" stroke="#2f6fb8" strokeWidth="3.6" fill="none" strokeLinecap="round" opacity="1"/>
         </svg>
       </div>
 
       <div className={styles.controls}>
         <button
           ref={ctaBtn as any}
-          className="rounded-full px-6 py-3 font-semibold"
+          className={`rounded-full px-6 py-3 font-semibold cta-float`}
           style={{ background: 'linear-gradient(90deg,#13a4ec,#8a2be2)', color: 'black', opacity: 0 }}
           onClick={() => {
-            // navigate to app page or remove splash — adapt as needed
-            // example: scroll to main content
+            // scroll into main or navigate
             const el = document.querySelector('main');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
