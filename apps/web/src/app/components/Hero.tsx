@@ -79,16 +79,16 @@ export default function Hero() {
           {/* RIGHT COLUMN */}
           <div className="flex items-center justify-center relative">
             <div className="w-full max-w-md relative">
-              {/* Genie image ABOVE the card */}
-              <img
-                alt="genie"
-                src="/images/genie-illustration.png"
-                className="absolute right-[-20px] top-[-140px] md:top-[-180px] w-48 md:w-64 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none animate-float"
-                style={{ zIndex: 10 }}
-              />
+                {/* Genie image ABOVE the card */}
+                <img
+                  alt="genie"
+                  src="/images/genie-illustration.png"
+                  className="absolute right-[-20px] top-[-140px] md:top-[-180px] w-48 md:w-64 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none animate-float"
+                  style={{ zIndex: 10 }}
+                />
 
-              {/* Quick summary CARD */}
-              <div className="panel p-6 rounded-2xl card-glow mt-32 md:mt-44">
+                {/* Quick summary CARD */}
+                <div className="panel p-6 rounded-2xl mt-32 md:mt-44" style={{ position: 'relative' }}>
                 <h4 className="text-slate-300 text-sm mb-3">Quick summary</h4>
                 <div className="text-white font-semibold text-lg">
                   Upload a doc → Ask the Genie → Get clause-level answers
@@ -113,6 +113,65 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      {/* component-scoped styles moved from globals.css (card-glow, panel, domain-btn, glow-btn, blob + keyframes) */}
+      <style jsx>{`
+        .panel {
+          border: 1px solid rgba(255,255,255,0.04);
+          background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+        }
+
+        .card-glow {
+          transition: transform .28s ease, box-shadow .28s ease;
+          box-shadow: 0 6px 24px rgba(2,6,23,0.6), 0 0 0 1px rgba(255,255,255,0.02) inset;
+          backdrop-filter: blur(8px);
+        }
+        .card-glow:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 18px 48px rgba(13,20,40,0.7), 0 0 40px rgba(19,164,236,0.06);
+        }
+
+        .glow-btn {
+          background: linear-gradient(90deg, var(--genie-1), var(--genie-2));
+          box-shadow: 0 8px 30px rgba(19,164,236,0.12);
+          transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .glow-btn:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 20px 60px rgba(19,164,236,0.18); }
+
+        .domain-btn {
+          transition: transform .18s cubic-bezier(.2,.9,.3,1), box-shadow .18s ease;
+          border-radius: 12px;
+          background: rgba(7,12,18,0.55);
+          border: 1px solid rgba(255,255,255,0.03);
+        }
+        .domain-btn:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 12px 40px rgba(19,164,236,0.06);
+        }
+
+        .blob {
+          position: absolute;
+          filter: blur(40px) saturate(120%);
+          opacity: .85;
+          transform-origin: center;
+          mix-blend-mode: screen;
+          pointer-events: none;
+        }
+
+        @keyframes blob {
+          0% { transform: translate(0px,0px) scale(1); }
+          33% { transform: translate(-20px, 10px) scale(1.05); }
+          66% { transform: translate(15px,-10px) scale(0.95); }
+          100% { transform: translate(0px,0px) scale(1); }
+        }
+
+        /* keep the hero z-index rule scoped to this component */
+        section[aria-label="Hero"] > .z-10 { z-index: 10; position: relative; }
+        /* keep responsive small tweaks that were in globals for hero */
+        @media (max-width: 768px) {
+          .blob { opacity: 0.6; filter: blur(30px); }
+          .panel { padding: 14px; }
+        }
+      `}</style>
     </section>
   );
 }
