@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root{
+  background-color: var(--bg-900);
   --genie-1: #13a4ec;
   --genie-2: #00f2ea;
   --genie-3: #8a2be2;
@@ -10,5 +11,4 @@
 
 /* particle canvas full size */
 .particle-canvas { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-
 
