@@ -118,6 +118,14 @@ export default function Hero() {
         .panel {
           border: 1px solid rgba(255,255,255,0.04);
           background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+          transition: transform .28s ease, box-shadow .28s ease;
+          will-change: transform;
+        }
+
+        /* float animation when hovering the quick summary card */
+        .panel:hover {
+          animation: float 2.6s ease-in-out infinite;
+          box-shadow: 0 20px 60px rgba(13,20,40,0.7), 0 0 40px rgba(19,164,236,0.06);
         }
 
         .card-glow {
@@ -162,6 +170,12 @@ export default function Hero() {
           33% { transform: translate(-20px, 10px) scale(1.05); }
           66% { transform: translate(15px,-10px) scale(0.95); }
           100% { transform: translate(0px,0px) scale(1); }
+        }
+
+        @keyframes float {
+          0% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+          100% { transform: translateY(0); }
         }
 
         /* keep the hero z-index rule scoped to this component */

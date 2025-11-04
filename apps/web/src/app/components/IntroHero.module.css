@@ -1,0 +1,54 @@
+/* apps/web/src/app/components/IntroHero.module.css */
+.wrapper {
+  position: relative;
+  height: 78vh;            /* shorter so content doesn't stretch too far */
+  min-height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(90deg,#040409 0%, rgba(7,12,18,1) 100%);
+  padding: 0 20px;
+}
+
+.center {
+  width: min(880px, 92%);
+  max-width: 1100px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Make the svg container constrain content and center it */
+.face {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 68vh; /* keeps SVG from getting too tall */
+}
+
+/* CTA area */
+.controls {
+  position: absolute;
+  right: 6%;
+  bottom: 6%;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+/* float animation for genie/cta */
+@keyframes floatGenie {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+.cta-float { animation: floatGenie 4s ease-in-out infinite; }
+
+/* Responsive: reduce hero size on smaller screens */
+@media (max-width: 900px) {
+  .wrapper { height: 64vh; min-height: 420px; }
+  .center { width: 96%; }
+  .controls { right: 4%; bottom: 4%; }
+  .face { max-height: 56vh; }
+}
