@@ -296,16 +296,16 @@ export default function IntroHero() {
               {/* CTA Button */}
               <button
                 onClick={handleGetStarted}
-                className="absolute bottom-20 rounded-full px-8 py-4 text-lg font-bold text-white shadow-2xl hover:scale-105 transition-transform"
+                className={`absolute bottom-20 rounded-full px-10 py-4 text-lg shadow-xl fusion-btn ${
+                  ctaOpacity > 0.5 ? "cursor-pointer" : "pointer-events-none"
+                }`}
                 style={{
-                  background: "linear-gradient(90deg, #13a4ec, #8a2be2)",
                   opacity: ctaOpacity,
                   transform: `translateY(${ctaY}px)`,
-                  pointerEvents: ctaOpacity > 0.5 ? "auto" : "none",
-                  transition: "opacity 0.2s ease-out",
+                  transition: "opacity 0.6s ease-out, transform 0.4s ease-out",
                 }}
               >
-                Get started
+                Get Started
               </button>
 
               {scrollProgress < 0.8 && (
@@ -383,6 +383,52 @@ export default function IntroHero() {
           </div>
         )}
       </div>
+      <style jsx>{`
+        @keyframes auroraPulse {
+          0% {
+            box-shadow: 0 0 20px rgba(94, 234, 212, 0.2),
+                        0 0 40px rgba(147, 197, 253, 0.1);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 35px rgba(94, 234, 212, 0.4),
+                        0 0 70px rgba(147, 197, 253, 0.25);
+            transform: scale(1.02);
+          }
+          100% {
+            box-shadow: 0 0 20px rgba(94, 234, 212, 0.2),
+                        0 0 40px rgba(147, 197, 253, 0.1);
+            transform: scale(1);
+          }
+        }
+
+        .fusion-btn {
+          background: linear-gradient(90deg, #5eead4, #93c5fd);
+          color: #0a0e1a;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          animation: auroraPulse 4s ease-in-out infinite;
+          transition: all 0.4s ease;
+        }
+
+        .fusion-btn:hover {
+          background: linear-gradient(90deg, #67e8f9, #a5b4fc);
+          transform: translateY(-3px) scale(1.04);
+          box-shadow: 0 0 45px rgba(94, 234, 212, 0.5),
+                      0 0 90px rgba(147, 197, 253, 0.3);
+        }
+        /* float effect when hovering CTA buttons (pulse-btn / fusion-btn) */
+        @keyframes pulseFloat {
+          0% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+          100% { transform: translateY(0); }
+        }
+
+        .pulse-btn:hover,
+        .fusion-btn:hover {
+          animation: pulseFloat 1.2s ease-in-out infinite;
+        }
+      `}</style>
     </>
   );
 }
