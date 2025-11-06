@@ -43,9 +43,8 @@ export default function IntroHero({ onStart }: Props) {
   const ctaOpacity = Math.max(0, (scrollProgress - 0.75) * 4);
   const ctaY = 30 - Math.max(0, (scrollProgress - 0.75) * 4) * 30;
 
-  // Eye animation - scale from closed (0.1) to open (1)
-  const eyeScaleL = 0.1 + scrollProgress * 0.9;
-  const eyeScaleR = 0.1 + scrollProgress * 0.9;
+  // Eyelid animation - opens from 0% to 100%
+  const eyelidOpen = scrollProgress; // 0 = closed, 1 = fully open
 
   // Mouth animation - opens gradually
   const mouthOpenness = scrollProgress;
@@ -199,33 +198,26 @@ export default function IntroHero({ onStart }: Props) {
                 {/* Right eye outer */}
                 <ellipse fill="#6bfcff" cx="332.52" cy="341.7" rx="55.5" ry="50.56"/>
                 
-                {/* Left pupil - scales up from center */}
-                <g style={{
-                  transformOrigin: '182.25px 344.17px',
-                  transform: `scale(${eyeScaleL})`,
-                  transition: 'transform 0.2s ease-out'
-                }}>
-                  <ellipse fill="#0d2bb7" cx="182.25" cy="344.17" rx="26.16" ry="32.03"/>
-                  <circle fill="#6bfcff" cx="190.15" cy="343.46" r="6.97"/>
-                </g>
+                {/* Left pupil - always visible */}
+                <ellipse fill="#0d2bb7" cx="182.25" cy="344.17" rx="26.16" ry="32.03"/>
+                <circle fill="#6bfcff" cx="190.15" cy="343.46" r="6.97"/>
 
-                {/* Right pupil - scales up from center */}
-                <g style={{
-                  transformOrigin: '327.27px 344.17px',
-                  transform: `scale(${eyeScaleR})`,
-                  transition: 'transform 0.2s ease-out'
-                }}>
-                  <ellipse fill="#0d2bb7" cx="327.27" cy="344.17" rx="26.16" ry="32.03"/>
-                  <circle fill="#6bfcff" cx="335.25" cy="344.17" r="6.97"/>
-                </g>
+                {/* Right pupil - always visible */}
+                <ellipse fill="#0d2bb7" cx="327.27" cy="344.17" rx="26.16" ry="32.03"/>
+                <circle fill="#6bfcff" cx="335.25" cy="344.17" r="6.97"/>
 
                 {/* Eyelids shadow */}
                 <path fill="#0723a3" d="M113.39,334.08v6.83s34.76-6.6,55.23-6.83,30.53.65,39.53,2.42,27.41,6,27.41,6l-.41-8.42s-27.88-12-60.88-10.63-30.52,2.27-37.87,4-23.01,6.63-23.01,6.63Z"/>
                 <path fill="#0723a3" d="M396.13,334.08v6.83s-34.76-6.6-55.23-6.83-30.53.65-39.53,2.42-27.41,6-27.41,6l.42-8.42s27.87-12,60.87-10.63,30.52,2.27,37.87,4,23.01,6.63,23.01,6.63Z"/>
 
-                {/* Upper eyelids */}
-                <path fill="#1e9dfa" d="M335.25,323.45a178.45,178.45,0,0,0-60.87,10.63,68.13,68.13,0,0,1-.42-7.47c0-35.8,27.44-64.82,61.29-64.82s61.3,29,61.3,64.82a68.13,68.13,0,0,1-.42,7.47,178.46,178.46,0,0,0-60.88-10.63Z"/>
-                <path fill="#1e9dfa" d="M174.27,323.45a178.5,178.5,0,0,1,60.88,10.63,70.72,70.72,0,0,0,.41-7.47c0-35.8-27.44-64.82-61.29-64.82s-61.29,29-61.29,64.82a70.72,70.72,0,0,0,.41,7.47,178.5,178.5,0,0,1,60.88-10.63Z"/>
+                {/* Upper eyelids - animate to reveal eyes */}
+                <g style={{
+                  transform: `translateY(${(1 - eyelidOpen) * 50}px)`,
+                  transition: 'transform 0.2s ease-out'
+                }}>
+                  <path fill="#1e9dfa" d="M335.25,323.45a178.45,178.45,0,0,0-60.87,10.63,68.13,68.13,0,0,1-.42-7.47c0-35.8,27.44-64.82,61.29-64.82s61.3,29,61.3,64.82a68.13,68.13,0,0,1-.42,7.47,178.46,178.46,0,0,0-60.88-10.63Z"/>
+                  <path fill="#1e9dfa" d="M174.27,323.45a178.5,178.5,0,0,1,60.88,10.63,70.72,70.72,0,0,0,.41-7.47c0-35.8-27.44-64.82-61.29-64.82s-61.29,29-61.29,64.82a70.72,70.72,0,0,0,.41,7.47,178.5,178.5,0,0,1,60.88-10.63Z"/>
+                </g>
               </g>
 
               {/* Eyebrows */}
