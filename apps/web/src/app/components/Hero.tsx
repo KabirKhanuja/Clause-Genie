@@ -1,11 +1,13 @@
 'use client';
 import AnimatedBg from './AnimatedBg';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const DOMAINS = ['Insurance','Law','Government','More'];
 
 export default function Hero() {
   const [picked, setPicked] = useState<string | null>(null);
+  const router = useRouter();
 
   return (
     <section
@@ -71,7 +73,12 @@ export default function Hero() {
             </div>
 
             <div className="mt-6 flex items-center gap-4">
-              <button className="glow-btn px-5 py-3 rounded-full font-semibold text-black">Upload Document</button>
+              <button
+                onClick={() => router.push('/upload')}
+                className="glow-btn px-5 py-3 rounded-full font-semibold text-black"
+              >
+                Upload Document
+              </button>
               <span className="text-sm text-slate-400">Try demo documents • Session-only</span>
             </div>
           </div>
