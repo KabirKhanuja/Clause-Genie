@@ -13,6 +13,21 @@ export default function Home() {
   const mainWrapperRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    try {
+      const isRoot = window.location.pathname === "/";
+      const hadClientNav = (window as any).__hadClientNavigation === true;
+      const shouldShowIntro = isRoot && !hadClientNav;
+      if (!shouldShowIntro) {
+        setMainVisible(true);
+      }
+      // if shouldShowIntro === true we leave mainVisible as false so IntroHero renders
+    } catch (e) {
+      // on any error, default to showing the main site
+      setMainVisible(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!mainVisible || !mainWrapperRef.current) return;
     gsap.fromTo(
       mainWrapperRef.current,
