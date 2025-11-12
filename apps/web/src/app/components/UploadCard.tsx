@@ -13,12 +13,19 @@ export default function UploadCard() {
   const router = useRouter();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // file size formatting 
+  const formatSize = (bytes: number | undefined) => {
+    if (bytes == null) return '';
+    const kb = Math.round(bytes / 1024);
+    const mb = bytes / (1024 * 1024);
+    return `${kb.toLocaleString()} KB (${mb.toFixed(2)} MB)`;
+  };
+
   function handleFiles(selected: FileList | null) {
     if (!selected) return;
-    const arr = Array.from(selected).slice(0, 8); // limit to 8
+    const arr = Array.from(selected).slice(0, 8); 
     setFiles((prev) => {
       const next = [...prev, ...arr];
-      // auto-select first newly added file
       setSelectedIndex(Math.max(0, prev.length));
       return next;
     });
@@ -150,7 +157,6 @@ export default function UploadCard() {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files, selectedIndex]);
 
   return (
@@ -194,7 +200,7 @@ export default function UploadCard() {
                 >
                   <div>
                     <div className="text-white text-sm font-medium">{f.name}</div>
-                    <div className="text-slate-400 text-xs">{Math.round(f.size / 1024)} KB</div>
+                    <div className="text-slate-400 text-xs">{formatSize(f.size)}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={(ev) => { ev.stopPropagation(); removeFile(i); }} className="text-slate-300 text-sm">Remove</button>
