@@ -1,20 +1,27 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function UploadCard() {
   const [files, setFiles] = useState<File[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dropRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   function handleFiles(selected: FileList | null) {
     if (!selected) return;
     const arr = Array.from(selected).slice(0, 8); // limit to 8
-    setFiles((prev) => [...prev, ...arr]);
+    setFiles((prev) => {
+      const next = [...prev, ...arr];
+      // auto-select first newly added file
+      setSelectedIndex(Math.max(0, prev.length));
+      return next;
+    });
   }
 
   function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -41,7 +48,16 @@ export default function UploadCard() {
   }
 
   function removeFile(index: number) {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFiles((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      setSelectedIndex((cur) => {
+        if (next.length === 0) return 0;
+        if (index === cur) return 0;
+        if (index < cur) return Math.max(0, cur - 1);
+        return cur;
+      });
+      return next;
+    });
   }
 
   function openFilePicker() {
@@ -101,8 +117,41 @@ export default function UploadCard() {
       setError(err?.message || 'Upload failed');
     } finally {
       setUploading(false);
+      // revoke preview URL when upload completes
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
     }
   }
+
+  // Manage preview URL for selected file
+  useEffect(() => {
+    if (!files || files.length === 0) {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+      return;
+    }
+
+    const f = files[Math.max(0, Math.min(selectedIndex, files.length - 1))];
+    if (!f) return;
+    // revoke previous
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    // create new preview URL for browsers to render
+    try {
+      const url = URL.createObjectURL(f);
+      setPreviewUrl(url);
+    } catch (e) {
+      setPreviewUrl(null);
+    }
+
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files, selectedIndex]);
 
   return (
     <form onSubmit={handleUpload} className="p-6 rounded-2xl bg-[#081226]/60 border border-slate-700">
@@ -134,19 +183,47 @@ export default function UploadCard() {
       {files.length > 0 && (
         <div className="mb-4">
           <div className="text-slate-300 mb-2">Files to upload</div>
-          <ul className="space-y-2">
-            {files.map((f, i) => (
-              <li key={`${f.name}-${i}`} className="flex items-center justify-between bg-[#061026]/40 p-2 rounded">
-                <div>
-                  <div className="text-white text-sm font-medium">{f.name}</div>
-                  <div className="text-slate-400 text-xs">{Math.round(f.size / 1024)} KB</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => removeFile(i)} className="text-slate-300 text-sm">Remove</button>
-                </div>
-              </li>
-            ))}
-          </ul>
+
+          <div className="flex gap-4">
+            <ul className="space-y-2 w-1/2">
+              {files.map((f, i) => (
+                <li
+                  key={`${f.name}-${i}`}
+                  onClick={() => setSelectedIndex(i)}
+                  className={`flex items-center justify-between bg-[#061026]/40 p-2 rounded cursor-pointer ${i === selectedIndex ? 'ring-2 ring-[#13a4ec]' : ''}`}
+                >
+                  <div>
+                    <div className="text-white text-sm font-medium">{f.name}</div>
+                    <div className="text-slate-400 text-xs">{Math.round(f.size / 1024)} KB</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={(ev) => { ev.stopPropagation(); removeFile(i); }} className="text-slate-300 text-sm">Remove</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="w-1/2 bg-[#061026]/20 p-3 rounded flex items-center justify-center">
+              {/* Preview pane */}
+              {previewUrl ? (
+                (() => {
+                  const f = files[Math.max(0, Math.min(selectedIndex, files.length - 1))];
+                  if (!f) return <div className="text-slate-400">No preview</div>;
+                  if (f.type && f.type.startsWith('image/')) {
+                    return <img src={previewUrl} alt={f.name} className="max-h-48 object-contain rounded" />;
+                  }
+                  if (f.type === 'application/pdf') {
+                    return (
+                      <embed src={previewUrl} type="application/pdf" width="100%" height="220px" />
+                    );
+                  }
+                  return <div className="text-slate-400 text-center">Preview not available for this file type</div>;
+                })()
+              ) : (
+                <div className="text-slate-400">Select a file to preview</div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
