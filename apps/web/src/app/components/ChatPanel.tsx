@@ -31,7 +31,18 @@ export default function ChatPanel() {
       </div>
 
       <div className="flex gap-2">
-        <input value={input} onChange={(e)=>setInput(e.target.value)} placeholder="Ask Genie about the document..." className="flex-1 rounded-full px-4 py-2 bg-[#061026] border border-slate-700 text-slate-200"/>
+        <input
+          value={input}
+          onChange={(e)=>setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              send();
+            }
+          }}
+          placeholder="Ask Genie about the document..."
+          className="flex-1 rounded-full px-4 py-2 bg-[#061026] border border-slate-700 text-slate-200"
+        />
         <button onClick={send} className="rounded-full px-4 py-2 bg-gradient-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold">Send</button>
       </div>
     </div>
