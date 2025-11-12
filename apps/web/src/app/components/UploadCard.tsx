@@ -196,10 +196,10 @@ export default function UploadCard() {
                 <li
                   key={`${f.name}-${i}`}
                   onClick={() => setSelectedIndex(i)}
-                  className={`flex items-center justify-between bg-[#061026]/40 p-2 rounded cursor-pointer ${i === selectedIndex ? 'ring-2 ring-[#13a4ec]' : ''}`}
+                  className={`flex items-center justify-between bg-[#061026]/40 p-2 rounded cursor-pointer min-w-0 ${i === selectedIndex ? 'ring-2 ring-[#13a4ec]' : ''}`}
                 >
-                  <div>
-                    <div className="text-white text-sm font-medium">{f.name}</div>
+                  <div className="min-w-0 mr-4">
+                    <div title={f.name} className="text-white text-sm font-medium truncate">{f.name}</div>
                     <div className="text-slate-400 text-xs">{formatSize(f.size)}</div>
                   </div>
                   <div className="flex items-center gap-2">
