@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
 import mammoth from 'mammoth';
 import { connectRedis } from '../utils/redisClient.js';
+import config, { parsedTtlSeconds } from '../config/index.js';
 
 // worker connection
 const connection = {
@@ -63,8 +64,11 @@ const worker = new Worker('parse-queue', async job => {
       status: 'parsed'
     });
 
-    // keeping extracted text as a single string 
-    await client.set(textKey, extractedText, { EX: 24 * 3600 }); // expired in 24 hours
+    // apply TTL to metadata hash so it expires with parsed data
+    await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
+
+    // keeping extracted text as a single string with configured TTL
+    await client.set(textKey, extractedText, { EX: parsedTtlSeconds });
 
     logger.info({ sessionId, docId: meta.docId }, 'Document parsed and stored in Redis');
     return Promise.resolve();

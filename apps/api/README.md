@@ -55,6 +55,24 @@ Notes:
 - OCR for images is not implemented by default; if you need OCR consider installing `tesseract` or `tesseract.js` and adding an OCR step to the worker.
 - If you enable pretty logging locally, install `pino-pretty` and run with `USE_PINO_PRETTY=1`.
 
+Parsed data storage (metadata & text)
+- Metadata key: `session:<sessionId>:doc:<docId>:meta` (Redis hash, contains fields like `docId`, `originalname`, `size`, `mimetype`, `uploadedAt`, `parsedAt`, `status`, `preview`).
+- Text key: `session:<sessionId>:doc:<docId>:text` (string containing the extracted text).
+- TTL: Both metadata and extracted text are set to expire after `PARSED_TTL_SECONDS` seconds. By default this value is 24 hours (86400 seconds). To change it, set `PARSED_TTL_SECONDS` in your `apps/api/.env`.
+
+Example: check a parsed doc in Redis
+```bash
+# list keys for a session
+redis-cli KEYS "session:<your-session-id>:doc:*:meta"
+
+# view metadata hash
+redis-cli HGETALL "session:<your-session-id>:doc:<doc-id>:meta"
+
+# view text and TTL
+redis-cli GET "session:<your-session-id>:doc:<doc-id>:text"
+redis-cli TTL "session:<your-session-id>:doc:<doc-id>:text"
+```
+
 
 Endpoints:
 - `GET /api/health` - health

@@ -74,15 +74,17 @@ export default function UploadCard() {
   function uploadToServer(formData: FormData) {
     return new Promise<Response>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/upload');
+
+      xhr.open('POST', 'http://localhost:4000/api/upload');
+
       xhr.upload.onprogress = (ev) => {
         if (ev.lengthComputable) {
           const pct = Math.round((ev.loaded / ev.total) * 100);
           setProgress(pct);
         }
       };
+
       xhr.onload = () => {
-        // @ts-ignore
         const status = xhr.status;
         if (status >= 200 && status < 300) {
           try {
@@ -95,6 +97,7 @@ export default function UploadCard() {
           reject(new Error(`Upload failed: ${xhr.statusText || status}`));
         }
       };
+
       xhr.onerror = () => reject(new Error('Network error'));
       xhr.send(formData);
     });

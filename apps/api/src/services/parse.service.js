@@ -4,7 +4,7 @@ import logger from '../utils/logger.js';
 import path from 'path';
 import fs from 'fs/promises';
 import { Queue } from 'bullmq';
-import config from '../config/index.js';
+import config, { parsedTtlSeconds } from '../config/index.js';
 
 // BullMQ queue (requires Redis)
 const queue = new Queue('parse-queue', {
@@ -49,7 +49,8 @@ export async function simpleParseAndStore(sessionId, meta) {
     path: meta.path || '',
     uploadedAt: meta.uploadedAt || new Date().toISOString()
   });
-  await client.expire(metaKey, 24 * 3600);
+  // ensure metadata expires after configured TTL
+  await client.expire(metaKey, parsedTtlSeconds);
 
   // attempt a lightweight preview (first 4KB text) for quick UI
   try {
@@ -66,6 +67,8 @@ export async function simpleParseAndStore(sessionId, meta) {
         if (buf) {
           const snippet = buf.slice(0, 4096);
           await client.hSet(metaKey, { preview: snippet });
+          // keep the same TTL for newly updated preview field
+          await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
         }
       }
     }
