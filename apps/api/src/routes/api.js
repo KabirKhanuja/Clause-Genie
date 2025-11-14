@@ -5,6 +5,7 @@ import fs from 'fs';
 import os from 'os';
 import config from '../config/index.js';
 import uploadController from '../controllers/upload.controller.js';
+import sessionController from '../controllers/session.controller.js';
 
 const router = express.Router();
 
@@ -29,6 +30,9 @@ const upload = multer({
 
 // routes
 router.get('/health', (req, res) => res.json({ ok: true }));
+
+// session lookup: list docs + preview
+router.get('/session/:sessionId', sessionController.getSession);
 
 // this is my upload endpoint: accepts multiple files, returns docIds for session
 router.post('/upload', upload.array('files', 8), uploadController.handleUpload);

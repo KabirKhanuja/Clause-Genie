@@ -1,4 +1,3 @@
-// apps/api/src/services/parse.service.js
 import { connectRedis } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 import path from 'path';
@@ -41,13 +40,18 @@ export async function simpleParseAndStore(sessionId, meta) {
   const client = await connectRedis();
   const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
   // store metadata as JSON string fields for reliable retrieval
+  // Store minimal metadata so the UI can list uploaded files immediately.
+  // Include required fields: status (uploaded), parsedAt (empty until parsing completes),
+  // originalname, path, mimetype. TTL is applied so data expires after configured window.
   await client.hSet(metaKey, {
     docId: meta.docId,
     originalname: meta.originalname,
     size: String(meta.size || 0),
     mimetype: meta.mimetype || '',
     path: meta.path || '',
-    uploadedAt: meta.uploadedAt || new Date().toISOString()
+    uploadedAt: meta.uploadedAt || new Date().toISOString(),
+    status: 'parsed',
+    parsedAt: ''
   });
   // ensure metadata expires after configured TTL
   await client.expire(metaKey, parsedTtlSeconds);

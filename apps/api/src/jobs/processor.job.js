@@ -1,5 +1,4 @@
 import { Worker } from 'bullmq';
-import config from '../config/index.js';
 import logger from '../utils/logger.js';
 import path from 'path';
 import fs from 'fs/promises';
@@ -59,19 +58,33 @@ const worker = new Worker('parse-queue', async job => {
     const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
     const textKey = `session:${sessionId}:doc:${meta.docId}:text`;
 
+    // keep extracted text as a single string with configured TTL first
+    await client.set(textKey, extractedText, { EX: parsedTtlSeconds });
+
+    // small preview saved in metadata for quick UI rendering
+    const preview = (extractedText || '').slice(0, 300);
+
+    // mark parsed and set parsedAt, include preview
     await client.hSet(metaKey, {
       parsedAt: new Date().toISOString(),
-      status: 'parsed'
+      status: 'parsed',
+      preview
     });
 
     // apply TTL to metadata hash so it expires with parsed data
     await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
 
-    // keeping extracted text as a single string with configured TTL
-    await client.set(textKey, extractedText, { EX: parsedTtlSeconds });
-
     logger.info({ sessionId, docId: meta.docId }, 'Document parsed and stored in Redis');
-    return Promise.resolve();
+
+    // delete uploaded file to free disk, but only after successful parse+store
+    try {
+      await fs.unlink(filePath).catch(() => null);
+      logger.info({ filePath, sessionId, docId: meta.docId }, 'Uploaded file deleted after parsing');
+    } catch (e) {
+      logger.warn({ err: e, filePath }, 'Failed to delete uploaded file after parsing');
+    }
+
+    return;
   } catch (err) {
     logger.error({ err, sessionId: job.data?.sessionId, docId: job.data?.meta?.docId }, 'Failed to parse document');
     try {
