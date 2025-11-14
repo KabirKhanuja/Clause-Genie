@@ -8,6 +8,54 @@
 5. Start API: `npm run dev`
 6. Start worker: `node src/jobs/processor.job.js`
 
+## Requirements
+
+System:
+- Node.js (v18+ recommended, this repo uses Node 22 in CI/dev)
+- Redis (server) running locally or reachable remotely (default host `127.0.0.1`, port `6379`)
+
+Installable packages (from `apps/api/package.json`):
+- `express` - web framework
+- `dotenv` - load environment variables from `.env`
+- `cors` - CORS helper
+- `multer` - multipart file uploads
+- `pdf-parse` - PDF text extraction (CommonJS module)
+- `mammoth` - DOCX -> text extraction
+- `redis` - Redis client
+- `bullmq` - background job queue (requires Redis)
+- `morgan` - HTTP request logging middleware
+- `pino` - structured logger
+- `uuid` - ID generation for sessions/docs
+
+Dev / optional packages:
+- `nodemon` - automatic restart in dev
+- `pino-pretty` (optional) - pretty-print logs when `USE_PINO_PRETTY=1`
+
+Suggested install (from `apps/api`):
+```bash
+cd apps/api
+npm install
+```
+
+Start Redis (examples):
+- Homebrew (macOS):
+    ```bash
+    brew install redis
+    brew services start redis
+    redis-cli ping # should reply PONG
+    ```
+- Docker:
+    ```bash
+    docker run -d --name clause-genie-redis -p 6379:6379 redis:7
+    docker exec -it clause-genie-redis redis-cli ping
+    ```
+
+Notes:
+- `pdf-parse` is a CommonJS package — the worker uses `createRequire` in ESM files to import it.
+- OCR for images is not implemented by default; if you need OCR consider installing `tesseract` or `tesseract.js` and adding an OCR step to the worker.
+- If you enable pretty logging locally, install `pino-pretty` and run with `USE_PINO_PRETTY=1`.
+
+
 Endpoints:
 - `GET /api/health` - health
 - `POST /api/upload` - multipart upload (field name `files[]`)
