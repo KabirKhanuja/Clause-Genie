@@ -25,43 +25,43 @@ uploads/        Temporary local file storage
 flowchart TB
 
     %% ========= CLIENT ========= %%
-    subgraph CLIENT["🟦 Frontend (Next.js)"]
-        UDF["📤 Upload Documents"]
-        UQ["❓ User Query"]
+    subgraph CLIENT["Frontend (Next.js)"]
+        UDF["Upload Documents"]
+        UQ["User Query"]
     end
 
     %% ========= API SERVER ========= %%
-    subgraph API["🟩 Node.js API (Express)"]
+    subgraph API["Node.js API (Express)"]
         direction TB
 
-        RTE["🔗 Routes (/api/upload, /api/query)"]
-        CTR["🧭 Controllers"]
-        MDW["🛡 Middleware (auth, error)"]
+        RTE["Routes (/api/upload, /api/query)"]
+        CTR["Controllers"]
+        MDW["Middleware (auth, error)"]
 
-        SRV_PARSE["🧩 Parse Service"]
-        SRV_RAG["🤖 RAG Service (embed, retrieve)"]
+        SRV_PARSE["Parse Service"]
+        SRV_RAG["RAG Service (embed, retrieve)"]
 
-        UPLOAD_DIR["📁 /uploads (temporary files)"]
+        UPLOAD_DIR["/uploads (temporary files)"]
     end
 
     %% ========= REDIS ========= %%
-    subgraph REDIS["🟥 Redis (Cache + Vector Store + Queue Broker)"]
-        RS1["📝 session:<id>:docs"]
-        RS2["📚 session:<id>:chunks"]
-        RS3["🔢 session:<id>:vectors (future Redis vector index)"]
-        QUEUE["📦 BullMQ Job Queue"]
+    subgraph REDIS["Redis (Cache + Vector Store + Queue Broker)"]
+        RS1["session:<id>:docs"]
+        RS2["session:<id>:chunks"]
+        RS3["session:<id>:vectors (future Redis vector index)"]
+        QUEUE["BullMQ Job Queue"]
     end
 
     %% ========= WORKER ========= %%
-    subgraph WORKER["🟪 Worker (BullMQ Processor)"]
-        JOB_PARSE["📜 Document Parser (PDF/OCR/Text extraction)"]
-        JOB_CHUNK["✂️ Chunking Engine"]
-        JOB_EMB["🧠 Embedding Engine (later: nomic-embed-text)"]
+    subgraph WORKER["Worker (BullMQ Processor)"]
+        JOB_PARSE["Document Parser (PDF/OCR/Text extraction)"]
+        JOB_CHUNK["Chunking Engine"]
+        JOB_EMB["Embedding Engine (later: nomic-embed-text)"]
     end
 
     %% ========= LLM ========= %%
-    subgraph LLM["🟧 Groq LLM"]
-        GEN["🧠 Answer Generator"]
+    subgraph LLM["Groq LLM"]
+        GEN["Answer Generator"]
     end
 
 
