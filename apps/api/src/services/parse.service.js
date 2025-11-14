@@ -33,16 +33,18 @@ export async function enqueueDocumentParsing(sessionId, meta) {
 }
 
 /**
- * Inline minimal parse: store meta in Redis and create an initial preview.
- * This was previously present but we need to ensure JSON is stored correctly.
+ * Inline minimal parse / metadata store: store meta in Redis and create an initial preview.
+ * If `markAsUploaded` is true, store status as 'uploaded' (initial state). Otherwise this
+ * function may be used as a fallback to mark as 'parsed' (legacy behaviour).
  */
-export async function simpleParseAndStore(sessionId, meta) {
+export async function simpleParseAndStore(sessionId, meta, opts = { markAsUploaded: false }) {
   const client = await connectRedis();
   const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
-  // store metadata as JSON string fields for reliable retrieval
-  // Store minimal metadata so the UI can list uploaded files immediately.
-  // Include required fields: status (uploaded), parsedAt (empty until parsing completes),
-  // originalname, path, mimetype. TTL is applied so data expires after configured window.
+
+  const status = opts.markAsUploaded ? 'uploaded' : 'parsed';
+
+  // store metadata as string fields for reliable retrieval
+  // mark as uploaded / pending parse — worker will flip to "parsed"
   await client.hSet(metaKey, {
     docId: meta.docId,
     originalname: meta.originalname,
@@ -50,16 +52,26 @@ export async function simpleParseAndStore(sessionId, meta) {
     mimetype: meta.mimetype || '',
     path: meta.path || '',
     uploadedAt: meta.uploadedAt || new Date().toISOString(),
-    status: 'parsed',
-    parsedAt: ''
+    status: 'uploaded',      // <-- important: indicates processing is pending
+    parsedAt: ''             // still empty until worker completes parsing
   });
-  // ensure metadata expires after configured TTL
-  await client.expire(metaKey, parsedTtlSeconds);
 
-  // attempt a lightweight preview (first 4KB text) for quick UI
+  // ensure metadata expires after configured TTL
+  if (parsedTtlSeconds && typeof parsedTtlSeconds === 'number') {
+    await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
+  }
+
+  // attempt a lightweight preview (non-blocking)
   try {
+    if (opts.markAsUploaded) {
+      // keep preview minimal; worker will replace with real preview when done
+      await client.hSet(metaKey, { preview: `${meta.originalname} uploaded — processing` }).catch(() => {});
+      if (parsedTtlSeconds) await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
+      return true;
+    }
+
+    // legacy/fallback behaviour: try to create a small preview from file content
     if (meta.mimetype === 'application/pdf') {
-      // we won't parse heavy here, worker will do full parse. Put placeholder.
       await client.hSet(metaKey, { preview: 'PDF uploaded (processing)' });
     } else if (meta.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       await client.hSet(metaKey, { preview: 'DOCX uploaded (processing)' });
@@ -71,8 +83,7 @@ export async function simpleParseAndStore(sessionId, meta) {
         if (buf) {
           const snippet = buf.slice(0, 4096);
           await client.hSet(metaKey, { preview: snippet });
-          // keep the same TTL for newly updated preview field
-          await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
+          if (parsedTtlSeconds) await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
         }
       }
     }

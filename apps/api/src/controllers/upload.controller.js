@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import logger from '../utils/logger.js';
+import parseService from '../services/parse.service.js';
 import logger from '../utils/logger.js';
 import parseService from '../services/parse.service.js';
 
@@ -43,8 +44,8 @@ const handleUpload = async (req, res, next) => {
       });
     }
 
-    // return sessionId + docs list
-    res.json({ sessionId, files: uploaded });
+    // return sessionId + docs list — 202 signals async accepted for processing
+    res.status(202).json({ sessionId, files: uploaded });
   } catch (err) {
     next(err);
   }
