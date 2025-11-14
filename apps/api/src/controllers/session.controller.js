@@ -3,7 +3,7 @@ import logger from '../utils/logger.js';
 
 /**
  * GET /api/session/:sessionId
- * Returns list of docs for the session with metadata and a small preview (first 300 chars).
+ * Returns list of docs for the session with metadata and a small preview (first 300 chars)
  */
 const getSession = async (req, res, next) => {
   try {
@@ -12,18 +12,16 @@ const getSession = async (req, res, next) => {
 
     const client = await connectRedis();
 
-    // find all meta keys for this session
+    // this finds all meta keys for this session
     const pattern = `session:${sessionId}:doc:*:meta`;
     const keys = await client.keys(pattern);
 
     const docs = await Promise.all(
       keys.map(async (metaKey) => {
         const meta = await client.hGetAll(metaKey);
-        // normalize fields
         const docIdMatch = metaKey.match(/doc:([^:]+):meta$/);
         const docId = docIdMatch ? docIdMatch[1] : meta.docId || null;
 
-        // fetch text preview (first 300 chars) if available
         const textKey = `session:${sessionId}:doc:${docId}:text`;
         let text = await client.get(textKey).catch(() => null);
         let preview = '';

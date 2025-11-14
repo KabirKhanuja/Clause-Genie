@@ -15,5 +15,5 @@ export default {
   maxUploadMB: Number(process.env.MAX_UPLOAD_MB || 50)
 };
 
-// Parsed data TTL (seconds). Default to 24 hours.
+// Parsed data TTL in second which is set for 24 hours 
 export const parsedTtlSeconds = Number(process.env.PARSED_TTL_SECONDS || 24 * 3600);

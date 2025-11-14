@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import { Queue } from 'bullmq';
 import config, { parsedTtlSeconds } from '../config/index.js';
 
-// BullMQ queue (requires Redis)
+// BullMQ queue 
 const queue = new Queue('parse-queue', {
   connection: {
     host: config.redis.host,
@@ -24,7 +24,6 @@ export async function enqueueDocumentParsing(sessionId, meta) {
     return true;
   } catch (err) {
     logger.warn({ err }, 'Failed to enqueue parse job, falling back to inline store');
-    // fallback: store minimal metadata so the app still works
     await simpleParseAndStore(sessionId, meta).catch(e => {
       logger.error({ e }, 'Fallback store failed');
     });
@@ -33,9 +32,9 @@ export async function enqueueDocumentParsing(sessionId, meta) {
 }
 
 /**
- * Inline minimal parse / metadata store: store meta in Redis and create an initial preview.
+ * Inline minimal parse / metadata store: store meta in Redis and create an initial preview
  * If `markAsUploaded` is true, store status as 'uploaded' (initial state). Otherwise this
- * function may be used as a fallback to mark as 'parsed' (legacy behaviour).
+ * function may be used as a fallback to mark as 'parsed' (legacy behaviour)
  */
 export async function simpleParseAndStore(sessionId, meta, opts = { markAsUploaded: false }) {
   const client = await connectRedis();
