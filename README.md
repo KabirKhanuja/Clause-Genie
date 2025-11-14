@@ -72,6 +72,23 @@ flowchart TB
     GEN -->|response| CLIENT
 ```
 
+## To run
+
+# frontend 
+cd apps/web
+```npm run dev```
+
+# backend 
+start API by cd apps/api
+```npm run dev```
+
+# in another terminal in the api start worker 
+```node src/jobs/processor.job.js```
+
+# verify redis: 
+```docker exec -it clause-redis redis-cli ping```
+
+
 
 
 ## Getting Started
