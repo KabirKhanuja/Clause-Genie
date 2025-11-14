@@ -8,13 +8,12 @@ import parseService from '../services/parse.service.js';
 // POST /upload
 const handleUpload = async (req, res, next) => {
   try {
-    // expecting sessionId in body (or generate server-side)
+    // expecting sessionId in body or generate server side
     const sessionId = req.body.sessionId || uuidv4();
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    // build response metadata
     const uploaded = [];
 
     for (const file of req.files) {
@@ -28,23 +27,21 @@ const handleUpload = async (req, res, next) => {
         uploadedAt: new Date().toISOString()
       };
 
-      // also optionally: immediate lightweight validation (type/size)
-      // persist metadata in Redis immediately so UI can read it right away
-      // and still kick off the parse job asynchronously.
+      // it persists the metadata in Redis immediately so ui can read it right away
+      // and still kick off the parse job asynchronously
       uploaded.push({ docId, meta });
 
-      // store minimal metadata (non-blocking) so front-end can list files
+      // this is storing meta data for the frontend to list all the files 
       parseService.simpleParseAndStore(sessionId, meta).catch((err) => {
         logger.warn({ err, sessionId, docId }, 'Failed to store metadata in Redis (simpleParseAndStore)');
       });
 
-      // kick off async parse job (non-blocking)
       parseService.enqueueDocumentParsing(sessionId, meta).catch((err) => {
         logger.error({ err }, 'Failed to enqueue parse job');
       });
     }
 
-    // return sessionId + docs list — 202 signals async accepted for processing
+    // returns sessionId + docs list ie 202 signals async accepted for processing
     res.status(202).json({ sessionId, files: uploaded });
   } catch (err) {
     next(err);

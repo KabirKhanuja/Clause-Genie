@@ -9,7 +9,6 @@ import mammoth from 'mammoth';
 import { connectRedis } from '../utils/redisClient.js';
 import config, { parsedTtlSeconds } from '../config/index.js';
 
-// worker connection
 const connection = {
   host: config.redis.host,
   port: config.redis.port,
