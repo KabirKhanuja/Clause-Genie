@@ -74,18 +74,16 @@ flowchart TB
 
 ## To run
 
-# frontend 
-cd apps/web
+frontend: cd apps/web
 ```npm run dev```
 
-# backend 
-start API by cd apps/api
+backend: start API by cd apps/api
 ```npm run dev```
 
-# in another terminal in the api start worker 
+in another terminal in the api start worker:
 ```node src/jobs/processor.job.js```
 
-# verify redis: 
+verify redis: 
 ```docker exec -it clause-redis redis-cli ping```
 
 
