@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import logger from '../utils/logger.js';
+import parseService from '../services/parse.service.js';
 import logger from '../utils/logger.js';
 import parseService from '../services/parse.service.js';
 
@@ -28,9 +29,14 @@ const handleUpload = async (req, res, next) => {
       };
 
       // also optionally: immediate lightweight validation (type/size)
-      // persist meta in Redis or trigger parsing job
-      // here we send to parse service directly (sync small demo)
+      // persist metadata in Redis immediately so UI can read it right away
+      // and still kick off the parse job asynchronously.
       uploaded.push({ docId, meta });
+
+      // store minimal metadata (non-blocking) so front-end can list files
+      parseService.simpleParseAndStore(sessionId, meta).catch((err) => {
+        logger.warn({ err, sessionId, docId }, 'Failed to store metadata in Redis (simpleParseAndStore)');
+      });
 
       // kick off async parse job (non-blocking)
       parseService.enqueueDocumentParsing(sessionId, meta).catch((err) => {
@@ -38,8 +44,8 @@ const handleUpload = async (req, res, next) => {
       });
     }
 
-    // return sessionId + docs list
-    res.json({ sessionId, files: uploaded });
+    // return sessionId + docs list — 202 signals async accepted for processing
+    res.status(202).json({ sessionId, files: uploaded });
   } catch (err) {
     next(err);
   }

@@ -44,3 +44,10 @@ yarn-error.log*
 next-env.d.ts
 .next
 
+# redis persistence
+*.rdb
+appendonly.aof
+appendonly.aof.*
+dump.rdb
+docker/redis-data/*
+
