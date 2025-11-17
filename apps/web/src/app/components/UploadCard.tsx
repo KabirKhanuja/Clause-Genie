@@ -12,8 +12,10 @@ export default function UploadCard() {
   const dropRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  // file size formatting 
   const formatSize = (bytes: number | undefined) => {
     if (bytes == null) return '';
     const kb = Math.round(bytes / 1024);
@@ -142,6 +144,7 @@ export default function UploadCard() {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
       }
+      if (previewText) setPreviewText(null);
       return;
     }
 
@@ -149,7 +152,34 @@ export default function UploadCard() {
     if (!f) return;
     // revoke previous
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    // create new preview URL for browsers to render
+    // reset prior text preview
+    if (previewText) setPreviewText(null);
+
+    // for DOCX files, attempt a client-side HTML preview using mammoth
+    const isDocx = f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || f.name.toLowerCase().endsWith('.docx');
+    if (isDocx) {
+      setPreviewUrl(null);
+      setPreviewText(null);
+      setPreviewHtml(null);
+      setPreviewLoading(true);
+      (async () => {
+        try {
+          const mammoth = (await import('mammoth')).default;
+          const arrayBuffer = await f.arrayBuffer();
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+          const html = result && result.value ? result.value : '';
+          // keep only a reasonable amount to avoid huge DOMs — but allow some formatting
+          setPreviewHtml(html);
+        } catch (err) {
+          setPreviewText('Preview not available');
+        } finally {
+          setPreviewLoading(false);
+        }
+      })();
+      return;
+    }
+
+    // create new preview URL for browsers to render (images, pdf)
     try {
       const url = URL.createObjectURL(f);
       setPreviewUrl(url);
@@ -159,6 +189,9 @@ export default function UploadCard() {
 
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewText) setPreviewText(null);
+      if (previewHtml) setPreviewHtml(null);
+      setPreviewLoading(false);
     };
   }, [files, selectedIndex]);
 
@@ -214,16 +247,33 @@ export default function UploadCard() {
 
             <div className="w-1/2 bg-[#061026]/20 p-3 rounded flex items-center justify-center">
               {/* Preview pane */}
-              {previewUrl ? (
+              {previewUrl || previewText || previewHtml ? (
                 (() => {
                   const f = files[Math.max(0, Math.min(selectedIndex, files.length - 1))];
                   if (!f) return <div className="text-slate-400">No preview</div>;
+                  if (previewLoading) {
+                    return <div className="text-slate-400">Generating preview...</div>;
+                  }
+                  if (previewHtml) {
+                    return (
+                      <div className="bg-white text-black p-4 rounded shadow max-h-[420px] overflow-auto w-full">
+                        <div className="prose prose-sm" style={{ width: '100%' }} dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                      </div>
+                    );
+                  }
+                  if (previewText) {
+                    return (
+                      <div className="bg-white text-black p-4 rounded shadow max-h-[280px] overflow-auto w-full text-sm whitespace-pre-wrap">
+                        {previewText}
+                      </div>
+                    );
+                  }
                   if (f.type && f.type.startsWith('image/')) {
-                    return <img src={previewUrl} alt={f.name} className="max-h-48 object-contain rounded" />;
+                    return <img src={previewUrl as string} alt={f.name} className="max-h-48 object-contain rounded" />;
                   }
                   if (f.type === 'application/pdf') {
                     return (
-                      <embed src={previewUrl} type="application/pdf" width="100%" height="220px" />
+                      <embed src={previewUrl as string} type="application/pdf" width="100%" height="220px" />
                     );
                   }
                   return <div className="text-slate-400 text-center">Preview not available for this file type</div>;

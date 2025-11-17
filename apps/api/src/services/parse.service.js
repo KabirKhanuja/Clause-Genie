@@ -2,6 +2,7 @@ import { connectRedis } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 import path from 'path';
 import fs from 'fs/promises';
+import mammoth from 'mammoth';
 import { Queue } from 'bullmq';
 import config, { parsedTtlSeconds } from '../config/index.js';
 
@@ -73,7 +74,18 @@ export async function simpleParseAndStore(sessionId, meta, opts = { markAsUpload
     if (meta.mimetype === 'application/pdf') {
       await client.hSet(metaKey, { preview: 'PDF uploaded (processing)' });
     } else if (meta.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      await client.hSet(metaKey, { preview: 'DOCX uploaded (processing)' });
+      // try to extract a small DOCX preview synchronously (lightweight)
+      if (meta.path) {
+        try {
+          const result = await mammoth.extractRawText({ path: meta.path });
+          const text = (result && result.value) ? result.value.trim().slice(0, 300) : 'DOCX uploaded (processing)';
+          await client.hSet(metaKey, { preview: text });
+        } catch (e) {
+          await client.hSet(metaKey, { preview: 'DOCX uploaded (processing)' });
+        }
+      } else {
+        await client.hSet(metaKey, { preview: 'DOCX uploaded (processing)' });
+      }
     } else if (meta.mimetype && meta.mimetype.startsWith('image/')) {
       await client.hSet(metaKey, { preview: 'Image uploaded (use OCR later)' });
     } else {

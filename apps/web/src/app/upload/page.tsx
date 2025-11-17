@@ -1,4 +1,3 @@
-// apps/web/src/app/upload/page.tsx
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import UploadCard from '../components/UploadCard';
