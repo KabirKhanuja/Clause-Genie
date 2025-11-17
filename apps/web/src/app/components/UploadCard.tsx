@@ -73,6 +73,23 @@ export default function UploadCard() {
     inputRef.current?.click();
   }
 
+  function clearAll() {
+    setFiles([]);
+    setSelectedIndex(0);
+    setError(null);
+    setPreviewText(null);
+    setPreviewHtml(null);
+    if (previewUrl) {
+      try { URL.revokeObjectURL(previewUrl); } catch (e) {}
+      setPreviewUrl(null);
+    }
+    if (inputRef.current) {
+      try {
+        inputRef.current.value = '';
+      } catch (e) {}
+    }
+  }
+
   function uploadToServer(formData: FormData) {
     return new Promise<Response>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -301,7 +318,7 @@ export default function UploadCard() {
 
       <div className="flex gap-3">
         <button disabled={uploading} className="px-4 py-2 rounded-full bg-gradient-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold" type="submit">{uploading ? 'Uploading...' : 'Upload Document'}</button>
-        <button type="button" onClick={() => setFiles([])} disabled={uploading} className="px-4 py-2 rounded-full border border-slate-700 text-slate-300">Clear</button>
+        <button type="button" onClick={clearAll} disabled={uploading} className="px-4 py-2 rounded-full border border-slate-700 text-slate-300">Clear</button>
       </div>
     </form>
   );
