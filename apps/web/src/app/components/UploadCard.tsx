@@ -145,6 +145,8 @@ export default function UploadCard() {
         setPreviewUrl(null);
       }
       if (previewText) setPreviewText(null);
+      if (previewHtml) setPreviewHtml(null);
+      setPreviewLoading(false);
       return;
     }
 
@@ -154,8 +156,10 @@ export default function UploadCard() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     // reset prior text preview
     if (previewText) setPreviewText(null);
+    // reset prior html preview
+    if (previewHtml) setPreviewHtml(null);
+    setPreviewLoading(false);
 
-    // for DOCX files, attempt a client-side HTML preview using mammoth
     const isDocx = f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || f.name.toLowerCase().endsWith('.docx');
     if (isDocx) {
       setPreviewUrl(null);
@@ -168,7 +172,6 @@ export default function UploadCard() {
           const arrayBuffer = await f.arrayBuffer();
           const result = await mammoth.convertToHtml({ arrayBuffer });
           const html = result && result.value ? result.value : '';
-          // keep only a reasonable amount to avoid huge DOMs — but allow some formatting
           setPreviewHtml(html);
         } catch (err) {
           setPreviewText('Preview not available');
@@ -179,7 +182,6 @@ export default function UploadCard() {
       return;
     }
 
-    // create new preview URL for browsers to render (images, pdf)
     try {
       const url = URL.createObjectURL(f);
       setPreviewUrl(url);
