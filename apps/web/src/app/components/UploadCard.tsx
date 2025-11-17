@@ -12,6 +12,7 @@ export default function UploadCard() {
   const dropRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
 
   // file size formatting 
   const formatSize = (bytes: number | undefined) => {
@@ -142,6 +143,7 @@ export default function UploadCard() {
         URL.revokeObjectURL(previewUrl);
         setPreviewUrl(null);
       }
+      if (previewText) setPreviewText(null);
       return;
     }
 
@@ -149,7 +151,42 @@ export default function UploadCard() {
     if (!f) return;
     // revoke previous
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    // create new preview URL for browsers to render
+    // reset prior text preview
+    if (previewText) setPreviewText(null);
+
+    // for DOCX files, attempt a lightweight client-side preview (extract text from the .docx)
+    const isDocx = f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || f.name.toLowerCase().endsWith('.docx');
+    if (isDocx) {
+      // create an object URL only for consistency, but we will show text preview
+      setPreviewUrl(null);
+      (async () => {
+        try {
+          const JSZip = (await import('jszip')).default;
+          const zip = await JSZip.loadAsync(f);
+          const docXmlFile = zip.file('word/document.xml');
+          if (docXmlFile) {
+            const docXml = await docXmlFile.async('string');
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(docXml, 'application/xml');
+            const textNodes = xmlDoc.getElementsByTagName('w:t');
+            let text = '';
+            for (let i = 0; i < textNodes.length; i++) {
+              text += (textNodes[i].textContent || '') + ' ';
+            }
+            text = text.trim().replace(/\s+/g, ' ').slice(0, 300);
+            if (text) setPreviewText(text);
+            else setPreviewText('Preview not available');
+          } else {
+            setPreviewText('Preview not available');
+          }
+        } catch (err) {
+          setPreviewText('Preview not available');
+        }
+      })();
+      return;
+    }
+
+    // create new preview URL for browsers to render (images, pdf)
     try {
       const url = URL.createObjectURL(f);
       setPreviewUrl(url);
@@ -159,6 +196,7 @@ export default function UploadCard() {
 
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewText) setPreviewText(null);
     };
   }, [files, selectedIndex]);
 
@@ -214,16 +252,19 @@ export default function UploadCard() {
 
             <div className="w-1/2 bg-[#061026]/20 p-3 rounded flex items-center justify-center">
               {/* Preview pane */}
-              {previewUrl ? (
+              {previewUrl || previewText ? (
                 (() => {
                   const f = files[Math.max(0, Math.min(selectedIndex, files.length - 1))];
                   if (!f) return <div className="text-slate-400">No preview</div>;
+                  if (previewText) {
+                    return <div className="text-slate-200 text-sm whitespace-pre-wrap max-h-48 overflow-auto">{previewText}</div>;
+                  }
                   if (f.type && f.type.startsWith('image/')) {
-                    return <img src={previewUrl} alt={f.name} className="max-h-48 object-contain rounded" />;
+                    return <img src={previewUrl as string} alt={f.name} className="max-h-48 object-contain rounded" />;
                   }
                   if (f.type === 'application/pdf') {
                     return (
-                      <embed src={previewUrl} type="application/pdf" width="100%" height="220px" />
+                      <embed src={previewUrl as string} type="application/pdf" width="100%" height="220px" />
                     );
                   }
                   return <div className="text-slate-400 text-center">Preview not available for this file type</div>;
