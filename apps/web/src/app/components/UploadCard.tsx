@@ -13,8 +13,9 @@ export default function UploadCard() {
   const router = useRouter();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  // file size formatting 
   const formatSize = (bytes: number | undefined) => {
     if (bytes == null) return '';
     const kb = Math.round(bytes / 1024);
@@ -154,33 +155,25 @@ export default function UploadCard() {
     // reset prior text preview
     if (previewText) setPreviewText(null);
 
-    // for DOCX files, attempt a lightweight client-side preview (extract text from the .docx)
+    // for DOCX files, attempt a client-side HTML preview using mammoth
     const isDocx = f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || f.name.toLowerCase().endsWith('.docx');
     if (isDocx) {
-      // create an object URL only for consistency, but we will show text preview
       setPreviewUrl(null);
+      setPreviewText(null);
+      setPreviewHtml(null);
+      setPreviewLoading(true);
       (async () => {
         try {
-          const JSZip = (await import('jszip')).default;
-          const zip = await JSZip.loadAsync(f);
-          const docXmlFile = zip.file('word/document.xml');
-          if (docXmlFile) {
-            const docXml = await docXmlFile.async('string');
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(docXml, 'application/xml');
-            const textNodes = xmlDoc.getElementsByTagName('w:t');
-            let text = '';
-            for (let i = 0; i < textNodes.length; i++) {
-              text += (textNodes[i].textContent || '') + ' ';
-            }
-            text = text.trim().replace(/\s+/g, ' ').slice(0, 300);
-            if (text) setPreviewText(text);
-            else setPreviewText('Preview not available');
-          } else {
-            setPreviewText('Preview not available');
-          }
+          const mammoth = (await import('mammoth')).default;
+          const arrayBuffer = await f.arrayBuffer();
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+          const html = result && result.value ? result.value : '';
+          // keep only a reasonable amount to avoid huge DOMs — but allow some formatting
+          setPreviewHtml(html);
         } catch (err) {
           setPreviewText('Preview not available');
+        } finally {
+          setPreviewLoading(false);
         }
       })();
       return;
@@ -197,6 +190,8 @@ export default function UploadCard() {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       if (previewText) setPreviewText(null);
+      if (previewHtml) setPreviewHtml(null);
+      setPreviewLoading(false);
     };
   }, [files, selectedIndex]);
 
@@ -252,12 +247,26 @@ export default function UploadCard() {
 
             <div className="w-1/2 bg-[#061026]/20 p-3 rounded flex items-center justify-center">
               {/* Preview pane */}
-              {previewUrl || previewText ? (
+              {previewUrl || previewText || previewHtml ? (
                 (() => {
                   const f = files[Math.max(0, Math.min(selectedIndex, files.length - 1))];
                   if (!f) return <div className="text-slate-400">No preview</div>;
+                  if (previewLoading) {
+                    return <div className="text-slate-400">Generating preview...</div>;
+                  }
+                  if (previewHtml) {
+                    return (
+                      <div className="bg-white text-black p-4 rounded shadow max-h-[420px] overflow-auto w-full">
+                        <div className="prose prose-sm" style={{ width: '100%' }} dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                      </div>
+                    );
+                  }
                   if (previewText) {
-                    return <div className="text-slate-200 text-sm whitespace-pre-wrap max-h-48 overflow-auto">{previewText}</div>;
+                    return (
+                      <div className="bg-white text-black p-4 rounded shadow max-h-[280px] overflow-auto w-full text-sm whitespace-pre-wrap">
+                        {previewText}
+                      </div>
+                    );
                   }
                   if (f.type && f.type.startsWith('image/')) {
                     return <img src={previewUrl as string} alt={f.name} className="max-h-48 object-contain rounded" />;
