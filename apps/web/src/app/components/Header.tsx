@@ -16,7 +16,6 @@ export default function Header() {
           <Link href="/upload" className="hover:text-white transition">Upload</Link>
           <Link href="/view" className="hover:text-white transition">Document</Link>
           <Link href="/chat" className="hover:text-white transition">Genie</Link>
-          <button className="ml-4 px-4 py-2 rounded-full text-black glow-btn">Get Started</button>
         </nav>
 
         <div className="md:hidden">

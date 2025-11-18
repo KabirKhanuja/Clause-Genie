@@ -34,6 +34,9 @@ router.get('/health', (req, res) => res.json({ ok: true }));
 // session lookup: list docs + preview
 router.get('/session/:sessionId', sessionController.getSession);
 
+// single doc: full parsed text + meta
+router.get('/session/:sessionId/doc/:docId', sessionController.getDoc);
+
 // this is my upload endpoint: accepts multiple files, returns docIds for session
 router.post('/upload', upload.array('files', 8), uploadController.handleUpload);
 

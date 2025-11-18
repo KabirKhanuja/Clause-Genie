@@ -51,4 +51,42 @@ const getSession = async (req, res, next) => {
   }
 };
 
-export default { getSession };
+/**
+ * GET /api/session/:sessionId/doc/:docId
+ * Returns full parsed text if present and simple meta for a single doc
+ */
+const getDoc = async (req, res, next) => {
+  try {
+    const { sessionId, docId } = req.params;
+    if (!sessionId || !docId) return res.status(400).json({ error: 'missing sessionId or docId' });
+
+    const client = await connectRedis();
+
+    const textKey = `session:${sessionId}:doc:${docId}:text`;
+    const metaKey = `session:${sessionId}:doc:${docId}:meta`;
+
+    const [text, meta] = await Promise.all([
+      client.get(textKey).catch(() => null),
+      client.hGetAll(metaKey).catch(() => ({}))
+    ]);
+
+    if (!text && (!meta || Object.keys(meta).length === 0)) {
+      return res.status(404).json({ error: 'document not found' });
+    }
+
+    return res.json({
+      docId,
+      text: text || null,
+      parsedAt: meta.parsedAt || null,
+      status: meta.status || (text ? 'parsed' : 'uploaded'),
+      originalname: meta.originalname || '',
+      size: meta.size ? Number(meta.size) : null,
+      mimetype: meta.mimetype || '',
+    });
+  } catch (err) {
+    logger.error({ err, sessionId: req.params?.sessionId, docId: req.params?.docId }, 'Failed to read document');
+    next(err);
+  }
+};
+
+export default { getSession, getDoc };
