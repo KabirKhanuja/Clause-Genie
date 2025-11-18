@@ -8,8 +8,8 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-  // watch hash for selection (set by SessionDocsList)
   useEffect(() => {
     function readHash() {
       const h = (window.location.hash || "").replace("#doc-", "");
@@ -20,7 +20,7 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
     return () => window.removeEventListener("hashchange", readHash);
   }, []);
 
-  // when selectedDocId or sessionId changes — fetch full text
+
   useEffect(() => {
     if (!sessionId || !selectedDocId) return;
     let cancelled = false;
@@ -29,14 +29,13 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
     setError(null);
     setStatusMsg(null);
 
-    // prefer dedicated doc endpoint
-    const docUrl = `/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(selectedDocId)}`;
+    // dedicated doc endpoint
+    const docUrl = `${API_BASE}/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(selectedDocId)}`;
 
     fetch(docUrl)
       .then(async (res) => {
         if (res.status === 404) {
-          // fallback: fetch session list and use preview
-          const sres = await fetch(`/api/session/${encodeURIComponent(sessionId)}`);
+          const sres = await fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}`);
           if (!sres.ok) throw new Error("Failed to fetch session fallback");
           const sjson = await sres.json();
           const doc = (sjson?.docs || []).find((d: any) => d.docId === selectedDocId);

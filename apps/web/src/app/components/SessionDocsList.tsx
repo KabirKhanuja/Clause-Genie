@@ -16,6 +16,7 @@ export default function SessionDocsList({ sessionId }: { sessionId?: string }) {
   const [docs, setDocs] = useState<Doc[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
   useEffect(() => {
     if (!sessionId) return setDocs(null);
@@ -23,7 +24,7 @@ export default function SessionDocsList({ sessionId }: { sessionId?: string }) {
     setLoading(true);
     setError(null);
 
-    fetch(`/api/session/${encodeURIComponent(sessionId)}`)
+    fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`Failed to fetch session (${res.status})`);
         return res.json();
@@ -47,12 +48,9 @@ export default function SessionDocsList({ sessionId }: { sessionId?: string }) {
   }, [sessionId]);
 
   function openDoc(docId: string) {
-    // simple way to communicate selected doc to DocumentViewer:
-    // update location.hash with docId. DocumentViewer reads it.
     try {
       window.location.hash = `doc-${docId}`;
     } catch (e) {
-      // ignore
     }
   }
 
