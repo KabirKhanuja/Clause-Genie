@@ -15,8 +15,8 @@ export default function DomainCards() {
         const isHover = hovered === i.title;
         const titleStyle: React.CSSProperties = {
           transition: 'color 160ms ease, text-shadow 160ms ease',
-          color: isHover ? '#13a4ec' : undefined,
-          textShadow: isHover ? '0 4px 18px rgba(19,164,236,0.95), 0 0 28px rgba(0,242,234,0.12)' : undefined,
+          color: isHover ? '#13a4ec' : 'rgba(230,238,248,0.9)',
+          textShadow: isHover ? '0 4px 18px rgba(19,164,236,0.95), 0 0 28px rgba(0,242,234,0.12)' : 'none',
         };
 
         return (
