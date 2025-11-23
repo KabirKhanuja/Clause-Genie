@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/globals.css";
 import ClientNavigationTracker from "./components/ClientNavigationTracker";
+import CustomCursor from "./cursor/CustomCursor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ClientNavigationTracker />
+        <CustomCursor />
 
         {children}
       </body>
