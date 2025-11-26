@@ -86,6 +86,9 @@ in another terminal in the api start worker:
 verify redis: 
 ```docker exec -it clause-redis redis-cli ping```
 
+to start docker: 
+```docker-compose up -d```
+
 
 
 
