@@ -6,7 +6,8 @@
 3. `npm install`
 4. Start Redis locally: `redis-server` (or use Docker)
 5. Start API: `npm run dev`
-6. Start worker: `node src/jobs/processor.job.js`
+6. Start Docker: `docker-compose up -d`
+7. Start worker: `node src/jobs/processor.job.js`
 
 ## Requirements
 
