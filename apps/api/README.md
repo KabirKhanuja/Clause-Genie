@@ -52,9 +52,20 @@ Start Redis (examples):
     ```
 
 Notes:
-- `pdf-parse` is a CommonJS package — the worker uses `createRequire` in ESM files to import it.
+- `pdf-parse` is a CommonJS package, the worker uses `createRequire` in ESM files to import it.
 - OCR for images is not implemented by default; if you need OCR consider installing `tesseract` or `tesseract.js` and adding an OCR step to the worker.
 - If you enable pretty logging locally, install `pino-pretty` and run with `USE_PINO_PRETTY=1`.
+
+Native canvas (pdf parsing):
+- **Why:** `pdf-parse` (via `pdf.js`) needs browser-like graphics primitives (`DOMMatrix`, `ImageData`, `Path2D`) to render and extract PDF content reliably in Node. Without these, pdf.js emits warnings and some package entrypoints expose only helper utilities instead of the parser.
+- **What we use:** `@napi-rs/canvas` : a native, fast canvas implementation that provides the required primitives on Node and avoids the need to install system Cairo libs.
+- **Install:**
+    ```bash
+    cd apps/api
+    npm install @napi-rs/canvas
+    ```
+- **macOS tip:** `@napi-rs/canvas` generally works out-of-the-box on modern macOS. If you run into build errors, ensure you have a recent Xcode toolchain installed (`xcode-select --install`) and that Homebrew packages are up to date. If you prefer the older `canvas` package (which requires Cairo), install Cairo first via Homebrew: `brew install pkg-config cairo pango libpng jpeg giflib librsvg`.
+- **Notes:** Once `@napi-rs/canvas` is installed the worker will have the primitives pdf.js expects and the `processor.job.js` loader will be able to initialize the parser (we also added defensive loader logic to handle different `pdf-parse` packaging shapes).
 
 Parsed data storage (metadata & text)
 - Metadata key: `session:<sessionId>:doc:<docId>:meta` (Redis hash, contains fields like `docId`, `originalname`, `size`, `mimetype`, `uploadedAt`, `parsedAt`, `status`, `preview`).
