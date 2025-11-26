@@ -41,18 +41,82 @@ const worker = new Worker('parse-queue', async job => {
     if (meta.mimetype === 'application/pdf' || filePath.toLowerCase().endsWith('.pdf')) {
       const data = await fs.readFile(filePath);
 
-      const mod = await import('pdf-parse');
+      let loaded = null;
 
-      const pdfParseFn =
-        (typeof mod.default === 'function' ? mod.default :
-        (typeof mod === 'function' ? mod : null));
-
-      if (!pdfParseFn) {
-        throw new Error('pdf-parse: parser function not found on module');
+      try {
+        const cjs = require('pdf-parse');
+        loaded = cjs;
+      } catch (e) {
+        try {
+          const mod = await import('pdf-parse');
+          loaded = mod;
+        } catch (ie) {
+          try {
+            loaded = require('pdf-parse/node');
+          } catch (ne) {
+            try {
+              const mnode = await import('pdf-parse/node');
+              loaded = mnode;
+            } catch (nne) {
+              logger.warn({ err: [e, ie, ne, nne] }, 'All attempts to load pdf-parse failed');
+            }
+          }
+        }
       }
 
-      const pdfRes = await pdfParseFn(data);
-      extractedText = (pdfRes && pdfRes.text) ? pdfRes.text : '';
+      if (!loaded) {
+        throw new Error('pdf-parse: module failed to load via require() or import()');
+      }
+
+      try {
+        const keys = (loaded && typeof loaded === 'object') ? Object.keys(loaded) : [];
+        if (keys.length === 1 && keys[0] === 'getHeader') {
+          try {
+            const alt = require('pdf-parse/dist/pdf-parse/cjs/index.cjs');
+            if (alt) loaded = alt;
+          } catch (errAlt) {
+            try {
+              const alt2 = await import('pdf-parse/dist/pdf-parse/esm/index.js');
+              if (alt2) loaded = alt2;
+            } catch (errAlt2) {
+              logger.warn({ err: [errAlt, errAlt2], pkgShape: keys }, 'Failed to load explicit pdf-parse dist entry');
+            }
+          }
+        }
+      } catch (e) {
+      }
+
+      const mod = (loaded && typeof loaded === 'object' && 'default' in loaded) ? loaded.default || loaded : loaded;
+
+      let text = '';
+
+      if (typeof mod === 'function') {
+        const pdfRes = await mod(data);
+        text = (pdfRes && pdfRes.text) ? pdfRes.text : '';
+      } else if (mod && typeof mod.PDFParse === 'function') {
+        try {
+          const ParserClass = mod.PDFParse;
+          const parser = new ParserClass({ data });
+          if (typeof parser.getText === 'function') {
+            const res = await parser.getText();
+            text = (res && res.text) ? res.text : '';
+          } else if (typeof parser.getInfo === 'function') {
+            const info = await parser.getInfo();
+            text = info?.info?.Title ? String(info.info.Title) : '';
+          }
+        } catch (e) {
+          logger.warn({ err: e }, 'Failed to use PDFParse class API');
+        }
+      } else if (mod && typeof mod.default === 'function') {
+        const pdfRes = await mod.default(data);
+        text = (pdfRes && pdfRes.text) ? pdfRes.text : '';
+      } else {
+        const keys = loaded && typeof loaded === 'object' ? Object.keys(loaded) : typeof loaded;
+        logger.warn({ pkgShape: keys }, 'pdf-parse module shape unexpected');
+        throw new Error('pdf-parse: parser function/class not found on loaded module');
+      }
+
+      extractedText = text;
     } else if (
       meta.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
       filePath.toLowerCase().endsWith('.docx')

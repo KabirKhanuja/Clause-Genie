@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "gsap": "^3.13.0",
-    "jszip": "^4.0.1",
+    "jszip": "^3.10.1",
     "mammoth": "^1.6.1",
     "next": "15.5.3",
     "react": "19.1.0",
