@@ -16,7 +16,6 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
   }
 }
 
-const pdfParse = require('pdf-parse');
 import mammoth from 'mammoth';
 import { connectRedis } from '../utils/redisClient.js';
 import config, { parsedTtlSeconds } from '../config/index.js';
@@ -39,11 +38,20 @@ const worker = new Worker('parse-queue', async job => {
       throw new Error('Missing file path in job meta');
     }
 
-    // we can choose extractor by mimetype / extension
     if (meta.mimetype === 'application/pdf' || filePath.toLowerCase().endsWith('.pdf')) {
-      // reading file and parsing it 
       const data = await fs.readFile(filePath);
-      const pdfRes = await pdfParse(data);
+
+      const mod = await import('pdf-parse');
+
+      const pdfParseFn =
+        (typeof mod.default === 'function' ? mod.default :
+        (typeof mod === 'function' ? mod : null));
+
+      if (!pdfParseFn) {
+        throw new Error('pdf-parse: parser function not found on module');
+      }
+
+      const pdfRes = await pdfParseFn(data);
       extractedText = (pdfRes && pdfRes.text) ? pdfRes.text : '';
     } else if (
       meta.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
