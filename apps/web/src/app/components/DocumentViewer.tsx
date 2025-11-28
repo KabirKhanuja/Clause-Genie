@@ -22,6 +22,15 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
     return () => window.removeEventListener("hashchange", readHash);
   }, []);
 
+  // if sessionId changes, we clear the selection so we don't carry over old hash/doc
+  useEffect(() => {
+    setSelectedDocId(null);
+    // also will clear hash to avoid accidental selection
+    if (typeof window !== "undefined") {
+      if ((window.location.hash || "").startsWith("#doc-")) window.location.hash = "";
+    }
+  }, [sessionId]);
+
 
   useEffect(() => {
     if (!sessionId || !selectedDocId) return;
