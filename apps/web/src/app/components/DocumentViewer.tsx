@@ -8,7 +8,9 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+  const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" ? "http://localhost:4000" : "");
 
   useEffect(() => {
     function readHash() {
