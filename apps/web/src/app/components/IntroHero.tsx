@@ -87,7 +87,7 @@ export default function IntroHero({ onStart }: Props) {
               opacity: titleOpacity,
             }}
           >
-            <h1 className="font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            <h1 className="font-bold bg-linear-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
               CLAUSE GENIE
             </h1>
           </div>
