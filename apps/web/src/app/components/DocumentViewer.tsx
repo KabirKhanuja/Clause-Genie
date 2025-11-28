@@ -8,7 +8,11 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+  const [showFull, setShowFull] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" ? "http://localhost:4000" : "");
 
   useEffect(() => {
     function readHash() {
@@ -20,45 +24,64 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
     return () => window.removeEventListener("hashchange", readHash);
   }, []);
 
+  // if sessionId changes, we clear the selection so we don't carry over old hash/doc
+  useEffect(() => {
+    setSelectedDocId(null);
+    // also will clear hash to avoid accidental selection
+    if (typeof window !== "undefined") {
+      if ((window.location.hash || "").startsWith("#doc-")) window.location.hash = "";
+    }
+  }, [sessionId]);
+
 
   useEffect(() => {
     if (!sessionId || !selectedDocId) return;
-    let cancelled = false;
+    const ac = new AbortController();
+    let mounted = true;
+
     setLoading(true);
     setText(null);
     setError(null);
     setStatusMsg(null);
+    setDownloadUrl(null);
 
-    // dedicated doc endpoint
     const docUrl = `${API_BASE}/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(selectedDocId)}`;
 
-    fetch(docUrl)
-      .then(async (res) => {
+    (async () => {
+      try {
+        const res = await fetch(docUrl, { signal: ac.signal });
         if (res.status === 404) {
-          const sres = await fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}`);
+          // fallback to session endpoint
+          const sres = await fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}`, { signal: ac.signal });
           if (!sres.ok) throw new Error("Failed to fetch session fallback");
           const sjson = await sres.json();
           const doc = (sjson?.docs || []).find((d: any) => d.docId === selectedDocId);
           if (!doc) throw new Error("Document not found in session");
+          if (!mounted) return;
           setText(doc.preview || "No preview available");
           setStatusMsg(doc.status === "parsed" ? null : "Parsing in progress — try again in a moment");
           return;
         }
         if (!res.ok) throw new Error(`Failed to fetch doc (${res.status})`);
         const json = await res.json();
-        // Expect {text: "...", docId, parsedAt?}
+        if (!mounted) return;
+        // accept possible download URL from backend (optional)
         setText(json?.text || json?.fullText || "");
         setStatusMsg(json?.parsedAt ? `Parsed: ${new Date(json.parsedAt).toLocaleString()}` : null);
-      })
-      .catch((err: any) => {
-        if (cancelled) return;
+        if (json?.downloadUrl) setDownloadUrl(json.downloadUrl);
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        if (!mounted) return;
         setError(err?.message || "Failed to load document");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
 
-    return () => { cancelled = true; };
+    return () => {
+      mounted = false;
+      ac.abort();
+    };
   }, [sessionId, selectedDocId]);
 
   async function copyText() {
@@ -81,7 +104,19 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
           {statusMsg && <div className="text-sm text-slate-400">{statusMsg}</div>}
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={copyText} disabled={!text} className="px-3 py-1 rounded bg-[#0f1724] text-slate-200 text-sm border border-slate-700">Copy text</button>
+          {downloadUrl && (
+            <a
+              href={downloadUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="px-3 py-1 rounded bg-[#0f1724] text-slate-200 text-sm border border-slate-700"
+            >
+              Open original
+            </a>
+          )}
+          <button onClick={copyText} disabled={!text} className="px-3 py-1 rounded bg-[#0f1724] text-slate-200 text-sm border border-slate-700">
+            Copy text
+          </button>
         </div>
       </div>
 
@@ -89,7 +124,38 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
         {loading && <div className="text-slate-400">Loading document…</div>}
         {error && <div className="text-red-400">{error}</div>}
         {!loading && !error && !text && <div className="text-slate-400">No document selected or no preview available yet.</div>}
-        {!loading && text && <div>{text}</div>}
+        {!loading && text && (
+          <div>
+            {/* render a trimmed preview when collapsed */}
+            {text.length > 12000 && !showFull ? (
+              <div>
+                <div>{text.slice(0, 4000)}</div>
+                <div className="mt-3">
+                  <button
+                    onClick={() => setShowFull(true)}
+                    className="px-3 py-1 rounded bg-[#0f1724] text-slate-200 text-sm border border-slate-700"
+                  >
+                    Show full document
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div>{text}</div>
+                {text.length > 12000 && (
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setShowFull(false)}
+                      className="px-3 py-1 rounded bg-[#0f1724] text-slate-200 text-sm border border-slate-700"
+                    >
+                      Show less
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

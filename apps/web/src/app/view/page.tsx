@@ -11,7 +11,7 @@ export default function ViewPage() {
   const sessionId = search?.get("sessionId") || "";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#061026] via-[#07142a] to-[#020617]">
+    <div className="min-h-screen bg-linear-to-br from-[#061026] via-[#07142a] to-[#020617]">
       <Header />
       <main className="px-6 py-12">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">

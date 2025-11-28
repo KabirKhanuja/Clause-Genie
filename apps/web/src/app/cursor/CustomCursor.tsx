@@ -48,7 +48,7 @@ export default function CustomCursor() {
       <div
         ref={ringRef}
         aria-hidden
-        className="fixed pointer-events-none z-[9999]"
+        className="fixed pointer-events-none z-9999"
         style={{
           width: 32,
           height: 32,
@@ -64,7 +64,7 @@ export default function CustomCursor() {
       <div
         ref={cursorRef}
         aria-hidden
-        className="fixed pointer-events-none z-[9999]"
+        className="fixed pointer-events-none z-9999"
         style={{
           width: 12,
           height: 12,

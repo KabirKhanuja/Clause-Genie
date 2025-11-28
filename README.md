@@ -72,7 +72,7 @@ flowchart TB
     GEN -->|response| CLIENT
 ```
 
-## To run
+## To run (dependency and working document @apps/api)
 
 frontend: cd apps/web
 ```npm run dev```
