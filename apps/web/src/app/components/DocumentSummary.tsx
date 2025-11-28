@@ -10,7 +10,7 @@ export default function DocumentSummary() {
         {bullets.map((b, i) => <li key={i}>{b}</li>)}
       </ol>
       <div className="mt-6">
-        <button className="w-full px-4 py-2 rounded-full bg-gradient-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold">Chat with Genie</button>
+        <button className="w-full px-4 py-2 rounded-full bg-linear-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold">Chat with Genie</button>
       </div>
     </div>
   );
