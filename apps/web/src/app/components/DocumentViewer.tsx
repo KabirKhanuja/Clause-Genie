@@ -67,12 +67,10 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
         if (!res.ok) throw new Error(`Failed to fetch doc (${res.status})`);
         const json = await res.json();
         if (!mounted) return;
-        // accept possible download URL from backend (optional)
         setText(json?.text || json?.fullText || "");
         setStatusMsg(json?.parsedAt ? `Parsed: ${new Date(json.parsedAt).toLocaleString()}` : null);
         if (json?.downloadUrl) setDownloadUrl(json.downloadUrl);
 
-        // after we have basic doc info, probe for original file availability
         try {
           const fileUrl = `${API_BASE}/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(selectedDocId)}/file`;
           const fres = await fetch(fileUrl, { method: 'GET' });
@@ -115,25 +113,46 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
           {statusMsg && <div className="text-sm text-slate-400">{statusMsg}</div>}
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-md bg-[#0b1220] p-1">
+          <div className="inline-flex rounded-md bg-transparent p-1 border border-transparent">
             <button
-              onClick={() => setViewMode('original')}
-              className={`px-3 py-1 rounded ${viewMode === 'original' ? 'bg-[#0f1724] text-white' : 'text-slate-300'}`}
-              disabled={fileAvailable === false}
+              onClick={() => {
+                if (fileAvailable === false) {
+                  setStatusMsg('Original file not available — may have been deleted or moved.');
+                  setTimeout(() => setStatusMsg(null), 2500);
+                  return;
+                }
+                setViewMode('original');
+              }}
+              className={`px-3 py-1 rounded-l-md font-medium text-sm transition ${
+                viewMode === 'original'
+                  ? 'bg-white/8 text-white shadow-inner'
+                  : 'bg-transparent text-slate-300 hover:bg-white/5'
+              }`}
               title={fileAvailable === false ? 'Original file not available' : 'Show original document'}
             >
               Document
             </button>
+
             <button
               onClick={() => setViewMode('parsed')}
-              className={`px-3 py-1 rounded ${viewMode === 'parsed' ? 'bg-[#0f1724] text-white' : 'text-slate-300'}`}
+              className={`px-3 py-1 rounded-r-md font-medium text-sm transition ${
+                viewMode === 'parsed'
+                  ? 'bg-white/8 text-white shadow-inner'
+                  : 'bg-transparent text-slate-300 hover:bg-white/5'
+              }`}
               title="Show parsed text"
             >
               Parsed
             </button>
           </div>
 
-          <button onClick={copyText} disabled={!text} className="px-3 py-1 rounded bg-[#0f1724] text-slate-200 text-sm border border-slate-700">Copy text</button>
+          <button
+            onClick={copyText}
+            disabled={!text}
+            className="ml-3 px-3 py-1 rounded bg-[#0f1724] text-slate-200 text-sm border border-slate-700 shadow-sm"
+          >
+            Copy text
+          </button>
         </div>
       </div>
 
@@ -150,7 +169,9 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
 
         {!loading && !error && viewMode === 'original' && (
           <>
-            {fileAvailable === null && <div className="text-slate-400">Checking for original file…</div>}
+            {fileAvailable === null && selectedDocId && (
+              <div className="text-slate-400">Checking if the original file is still available…</div>
+            )}
             {fileAvailable === false && <div className="text-slate-400">Original file not available (it may have been deleted or moved).</div>}
             {fileAvailable === true && (
               <>
