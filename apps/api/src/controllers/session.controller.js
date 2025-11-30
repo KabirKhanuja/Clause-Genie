@@ -91,7 +91,7 @@ const getDoc = async (req, res, next) => {
 
 /**
  * GET /api/session/:sessionId/doc/:docId/file
- * Streams the original uploaded file for preview (if still present on disk).
+ * Streams the original uploaded file for preview (if still present on disk)
  */
 const getDocFile = async (req, res, next) => {
   try {
@@ -105,11 +105,8 @@ const getDocFile = async (req, res, next) => {
     const filePath = meta?.path;
     if (!filePath) return res.status(404).json({ error: 'file not available' });
 
-    // send the file if it still exists
-    // use sendFile so proper headers are set (and range requests possible)
     return res.sendFile(filePath, (err) => {
       if (err) {
-        // file isn't reachable (deleted), return 404
         return res.status(404).json({ error: 'file not available' });
       }
     });
