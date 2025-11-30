@@ -100,7 +100,7 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
         <div style={{ position: "fixed", right: 22, bottom: 22, zIndex: 60 }}>
           <button
             onClick={() => setOpen(true)}
-            className="px-4 py-3 rounded-full shadow-lg border border-slate-700 bg-gradient-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold"
+            className="px-4 py-3 rounded-full shadow-lg border border-slate-700 bg-linear-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold"
             aria-expanded={open}
             aria-label="Open chat"
           >
