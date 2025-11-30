@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import SessionDocsList from "../components/SessionDocsList";
 import DocumentViewer from "../components/DocumentViewer";
+import ChatWindow from "../components/ChatWindow";
 
 export default function ViewPage() {
   const search = useSearchParams();
@@ -28,6 +29,9 @@ export default function ViewPage() {
         </div>
       </main>
       <Footer />
+
+      {/* slide-in chat panel */}
+      <ChatWindow sessionId={sessionId} />
     </div>
   );
 }
