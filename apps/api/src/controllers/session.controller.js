@@ -1,5 +1,8 @@
 import { connectRedis } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
+import path from 'path';
+import fs from 'fs';
+import config from '../config/index.js';
 
 /**
  * GET /api/session/:sessionId
@@ -89,4 +92,49 @@ const getDoc = async (req, res, next) => {
   }
 };
 
-export default { getSession, getDoc };
+/**
+ * GET /api/session/:sessionId/doc/:docId/file
+ * Streams the original uploaded file for preview (if still present on disk)
+ */
+const getDocFile = async (req, res, next) => {
+  try {
+    const { sessionId, docId } = req.params;
+    if (!sessionId || !docId) return res.status(400).json({ error: 'missing sessionId or docId' });
+
+    const client = await connectRedis();
+    const metaKey = `session:${sessionId}:doc:${docId}:meta`;
+    const meta = await client.hGetAll(metaKey);
+
+    const rawPath = meta?.path;
+    if (!rawPath) return res.status(404).json({ error: 'file not available' });
+
+    const uploadsRoot = path.resolve(config.uploadDir);
+    const absPath = path.resolve(uploadsRoot, path.basename(rawPath));
+
+    if (!absPath.startsWith(uploadsRoot) || !fs.existsSync(absPath)) {
+      const rawAbs = path.resolve(rawPath);
+      if (rawAbs.startsWith(uploadsRoot) && fs.existsSync(rawAbs)) {
+        logger.info({ sessionId, docId, rawPath, uploadsRoot, absPath: rawAbs }, 'Serving document using stored absolute path');
+        return res.sendFile(rawAbs, (err) => {
+          if (err) {
+            return res.status(404).json({ error: 'file not available' });
+          }
+        });
+      }
+
+      logger.warn({ sessionId, docId, rawPath, uploadsRoot, absPath }, 'Document file not found under uploads');
+      return res.status(404).json({ error: 'file not available' });
+    }
+
+    return res.sendFile(absPath, (err) => {
+      if (err) {
+        return res.status(404).json({ error: 'file not available' });
+      }
+    });
+  } catch (err) {
+    logger.error({ err, sessionId: req.params?.sessionId, docId: req.params?.docId }, 'Failed to stream document file');
+    next(err);
+  }
+};
+
+export default { getSession, getDoc, getDocFile };

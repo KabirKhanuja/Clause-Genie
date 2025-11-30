@@ -141,17 +141,18 @@ const worker = new Worker('parse-queue', async job => {
     const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
     const textKey = `session:${sessionId}:doc:${meta.docId}:text`;
 
-    // keeping extracted text as a single string with configured TTL first
     await client.set(textKey, extractedText, { EX: parsedTtlSeconds });
 
-    // a small preview saved in metadata for quick UI rendering
     const preview = (extractedText || '').slice(0, 300);
 
-    // marking parsed and set parsedAt, include preview
     await client.hSet(metaKey, {
       parsedAt: new Date().toISOString(),
       status: 'parsed',
-      preview
+      preview,
+      path: meta.path || '',
+      originalname: meta.originalname || '',
+      mimetype: meta.mimetype || '',
+      size: meta.size != null ? String(meta.size) : ''
     });
 
     // applying TTL to metadata hash so it expires with parsed data
@@ -159,10 +160,14 @@ const worker = new Worker('parse-queue', async job => {
 
     logger.info({ sessionId, docId: meta.docId }, 'Document parsed and stored in Redis');
 
-    // for deleting the uploaded file to free disk, but only after successful parse+store
+    // delete uploaded file only when keepUploads is false
     try {
-      await fs.unlink(filePath).catch(() => null);
-      logger.info({ filePath, sessionId, docId: meta.docId }, 'Uploaded file deleted after parsing');
+      if (!config.keepUploads) {
+        await fs.unlink(filePath).catch(() => null);
+        logger.info({ filePath, sessionId, docId: meta.docId }, 'Uploaded file deleted after parsing');
+      } else {
+        logger.info({ filePath, sessionId, docId: meta.docId }, 'Keeping uploaded file (keepUploads=true)');
+      }
     } catch (e) {
       logger.warn({ err: e, filePath }, 'Failed to delete uploaded file after parsing');
     }

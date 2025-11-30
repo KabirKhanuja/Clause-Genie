@@ -24,7 +24,6 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
     return h || null;
   }
 
-  // keep doc in state for metadata shown in the chat header
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   useEffect(() => {
     function readHash() {
@@ -96,17 +95,19 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
 
   return (
     <>
-      {/* floating toggle button */}
-      <div style={{ position: "fixed", right: 22, bottom: 22, zIndex: 60 }}>
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="px-4 py-3 rounded-full shadow-lg border border-slate-700 bg-gradient-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold"
-          aria-expanded={open}
-          aria-label={open ? "Close chat" : "Open chat"}
-        >
-          {open ? "Close Genie" : "Chat with Genie"}
-        </button>
-      </div>
+      {/* floating toggle button (only visible when closed) */}
+      {!open && (
+        <div style={{ position: "fixed", right: 22, bottom: 22, zIndex: 60 }}>
+          <button
+            onClick={() => setOpen(true)}
+            className="px-4 py-3 rounded-full shadow-lg border border-slate-700 bg-gradient-to-r from-[#13a4ec] to-[#00f2ea] text-black font-semibold"
+            aria-expanded={open}
+            aria-label="Open chat"
+          >
+            Chat with Genie
+          </button>
+        </div>
+      )}
 
       {/* sliding panel */}
       <div
@@ -114,14 +115,28 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
         style={{ width: 420, maxWidth: "100vw", background: "linear-gradient(180deg,#071126,#020617)", boxShadow: "-20px 0 80px rgba(0,0,0,0.6)", borderLeft: "1px solid rgba(255,255,255,0.03)" }}
       >
         <div className="h-full flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between gap-3">
             <div>
               <div className="text-white font-semibold">Clause Genie</div>
               <div className="text-xs text-slate-400">{sessionId ? `Session: ${sessionId.slice(0, 8)}…` : "No session"}</div>
               <div className="text-xs text-slate-400">{selectedDocId ? `Doc: ${selectedDocId.slice(0, 8)}…` : "No doc selected"}</div>
             </div>
-            <div>
-              <button onClick={() => { setMessages([]); }} className="text-sm text-slate-400">Clear</button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setMessages([]);
+                }}
+                className="text-sm text-slate-400 hover:text-slate-200"
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+                aria-label="Close chat panel"
+              >
+                ✕
+              </button>
             </div>
           </div>
 

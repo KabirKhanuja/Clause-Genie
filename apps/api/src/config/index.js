@@ -12,7 +12,8 @@ export default {
     password: process.env.REDIS_PASSWORD || ''
   },
   uploadDir: process.env.UPLOAD_DIR || './src/uploads',
-  maxUploadMB: Number(process.env.MAX_UPLOAD_MB || 50)
+  maxUploadMB: Number(process.env.MAX_UPLOAD_MB || 50),
+  keepUploads: process.env.KEEP_UPLOADS === 'true' || false
 };
 
 // Parsed data TTL in second which is set for 24 hours 
