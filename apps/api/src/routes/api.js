@@ -6,6 +6,7 @@ import os from 'os';
 import config from '../config/index.js';
 import uploadController from '../controllers/upload.controller.js';
 import sessionController from '../controllers/session.controller.js';
+import chatController from '../controllers/chat.controller.js';
 
 const router = express.Router();
 
@@ -39,5 +40,8 @@ router.get('/session/:sessionId/doc/:docId', sessionController.getDoc);
 
 // this is my upload endpoint: accepts multiple files, returns docIds for session
 router.post('/upload', upload.array('files', 8), uploadController.handleUpload);
+
+// chat endpoint (basic retrieval + generation)
+router.post('/chat', chatController.handleChat);
 
 export default router;
