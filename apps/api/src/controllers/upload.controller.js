@@ -24,11 +24,11 @@ const handleUpload = async (req, res, next) => {
         uploadedAt: new Date().toISOString()
       };
 
-      // it persists the metadata in Redis immediately so ui can read it right away
-      // and still kick off the parse job asynchronously
+      logger.info({ sessionId, docId, path: file.path, originalname: file.originalname }, 'File received and stored by Multer');
+
+   
       uploaded.push({ docId, meta });
 
-      // this is storing meta data for the frontend to list all the files 
       parseService.simpleParseAndStore(sessionId, meta).catch((err) => {
         logger.warn({ err, sessionId, docId }, 'Failed to store metadata in Redis (simpleParseAndStore)');
       });

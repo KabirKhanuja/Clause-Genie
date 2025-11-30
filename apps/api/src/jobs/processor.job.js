@@ -141,17 +141,18 @@ const worker = new Worker('parse-queue', async job => {
     const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
     const textKey = `session:${sessionId}:doc:${meta.docId}:text`;
 
-    // keeping extracted text as a single string with configured TTL first
     await client.set(textKey, extractedText, { EX: parsedTtlSeconds });
 
-    // a small preview saved in metadata for quick UI rendering
     const preview = (extractedText || '').slice(0, 300);
 
-    // marking parsed and set parsedAt, include preview
     await client.hSet(metaKey, {
       parsedAt: new Date().toISOString(),
       status: 'parsed',
-      preview
+      preview,
+      path: meta.path || '',
+      originalname: meta.originalname || '',
+      mimetype: meta.mimetype || '',
+      size: meta.size != null ? String(meta.size) : ''
     });
 
     // applying TTL to metadata hash so it expires with parsed data

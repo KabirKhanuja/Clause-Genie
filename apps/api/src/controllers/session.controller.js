@@ -1,5 +1,8 @@
 import { connectRedis } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
+import path from 'path';
+import fs from 'fs';
+import config from '../config/index.js';
 
 /**
  * GET /api/session/:sessionId
@@ -102,10 +105,28 @@ const getDocFile = async (req, res, next) => {
     const metaKey = `session:${sessionId}:doc:${docId}:meta`;
     const meta = await client.hGetAll(metaKey);
 
-    const filePath = meta?.path;
-    if (!filePath) return res.status(404).json({ error: 'file not available' });
+    const rawPath = meta?.path;
+    if (!rawPath) return res.status(404).json({ error: 'file not available' });
 
-    return res.sendFile(filePath, (err) => {
+    const uploadsRoot = path.resolve(config.uploadDir);
+    const absPath = path.resolve(uploadsRoot, path.basename(rawPath));
+
+    if (!absPath.startsWith(uploadsRoot) || !fs.existsSync(absPath)) {
+      const rawAbs = path.resolve(rawPath);
+      if (rawAbs.startsWith(uploadsRoot) && fs.existsSync(rawAbs)) {
+        logger.info({ sessionId, docId, rawPath, uploadsRoot, absPath: rawAbs }, 'Serving document using stored absolute path');
+        return res.sendFile(rawAbs, (err) => {
+          if (err) {
+            return res.status(404).json({ error: 'file not available' });
+          }
+        });
+      }
+
+      logger.warn({ sessionId, docId, rawPath, uploadsRoot, absPath }, 'Document file not found under uploads');
+      return res.status(404).json({ error: 'file not available' });
+    }
+
+    return res.sendFile(absPath, (err) => {
       if (err) {
         return res.status(404).json({ error: 'file not available' });
       }
