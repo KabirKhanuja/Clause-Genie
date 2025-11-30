@@ -53,7 +53,7 @@ export default function Hero() {
           <div className="pt-8 md:pt-0">
             <h1 className="text-white text-4xl md:text-6xl lg:text-7xl font-extrabold leading-tight">
               Wanna understand and break down your complex documents?{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#13a4ec] to-[#8a2be2]">Ask Genie ✨</span>
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-[#13a4ec] to-[#8a2be2]">Ask Genie ✨</span>
             </h1>
 
             <p className="mt-6 text-slate-300 max-w-xl text-lg">
@@ -90,7 +90,7 @@ export default function Hero() {
                 <img
                   alt="genie"
                   src="/images/genie-illustration.png"
-                  className="absolute right-[-20px] top-[-140px] md:top-[-180px] w-48 md:w-64 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none animate-float"
+                  className="absolute -right-5 top-[-140px] md:top-[-180px] w-48 md:w-64 opacity-95 drop-shadow-[0_30px_60px_rgba(0,0,0,0.6)] pointer-events-none animate-float"
                   style={{ zIndex: 10 }}
                 />
 
