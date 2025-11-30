@@ -38,6 +38,9 @@ router.get('/session/:sessionId', sessionController.getSession);
 // single doc: full parsed text + meta
 router.get('/session/:sessionId/doc/:docId', sessionController.getDoc);
 
+// single doc file: stream original upload (if available)
+router.get('/session/:sessionId/doc/:docId/file', sessionController.getDocFile);
+
 // this is my upload endpoint: accepts multiple files, returns docIds for session
 router.post('/upload', upload.array('files', 8), uploadController.handleUpload);
 

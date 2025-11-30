@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import SessionDocsList from "../components/SessionDocsList";
+import SessionDocPreview from "../components/SessionDocPreview";
 import DocumentViewer from "../components/DocumentViewer";
 import ChatWindow from "../components/ChatWindow";
 
@@ -25,6 +26,9 @@ export default function ViewPage() {
           <aside className="p-6 rounded-2xl bg-[#081226]/50 border border-slate-700">
             <h3 className="text-white font-bold mb-4">Session documents</h3>
             <SessionDocsList sessionId={sessionId} />
+            <div className="mt-6">
+              <SessionDocPreview sessionId={sessionId} />
+            </div>
           </aside>
         </div>
       </main>
