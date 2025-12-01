@@ -7,7 +7,9 @@
 4. Start Redis locally: `redis-server` (or use Docker)
 5. Start API: `npm run dev`
 6. Start Docker: `docker-compose up -d`
-7. Start worker: `node src/jobs/processor.job.js`
+7. Start Worker: `node src/jobs/processor.job.js`
+8. Start Redis: `brew services start redis`
+8. Checke Redis: `redis-cli ping` (should give pong)
 
 ## Requirements
 
