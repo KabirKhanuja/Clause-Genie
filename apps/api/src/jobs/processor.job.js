@@ -137,6 +137,9 @@ const worker = new Worker('parse-queue', async job => {
     }
 
     // will store results in Redis under session key
+    extractedText = String(extractedText || '');
+    logger.info({ sessionId, docId: meta.docId, textLength: extractedText.length }, 'Parsed text length');
+
     const client = await connectRedis();
     const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
     const textKey = `session:${sessionId}:doc:${meta.docId}:text`;
