@@ -20,6 +20,8 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
   const [view, setView] = useState<"parsed" | "document">("parsed");
   const [error, setError] = useState<string | null>(null);
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [savedScrollPos, setSavedScrollPos] = useState(0);
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? "http://localhost:4000" : "");
 
   useEffect(() => {
@@ -114,13 +116,33 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setView("document")}
+            onClick={() => {
+              if (view === "document" && iframeRef.current?.contentWindow) {
+                try {
+                  const scrollY = iframeRef.current.contentWindow.scrollY || 0;
+                  setSavedScrollPos(scrollY);
+                } catch (e) {
+                  // Cross-origin iframe, can't access scroll
+                }
+              }
+              setView("document");
+            }}
             className={`px-3 py-1 rounded ${view === "document" ? "bg-[#0f1724] text-white" : "bg-transparent text-slate-300 border border-transparent hover:bg-[#071126]"}`}
           >
             Document
           </button>
           <button
-            onClick={() => setView("parsed")}
+            onClick={() => {
+              if (view === "document" && iframeRef.current?.contentWindow) {
+                try {
+                  const scrollY = iframeRef.current.contentWindow.scrollY || 0;
+                  setSavedScrollPos(scrollY);
+                } catch (e) {
+                  // Cross-origin iframe, can't access scroll
+                }
+              }
+              setView("parsed");
+            }}
             className={`px-3 py-1 rounded ${view === "parsed" ? "bg-[#0f1724] text-white" : "bg-transparent text-slate-300 border border-transparent hover:bg-[#071126]"}`}
           >
             Parsed
@@ -166,11 +188,24 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
               style={{ maxHeight: "68vh", width: "auto" }}
             />
           ) : meta?.mimetype === "application/pdf" ||
-            meta?.originalname?.toLowerCase().endsWith(".pdf") ? (
+            meta?.originalname?.toLowerCase().endsWith(".pdf") ||
+            meta?.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+            meta?.originalname?.toLowerCase().endsWith(".docx") ? (
             <iframe
+              ref={iframeRef}
               src={iframeSrc || ""}
               title={meta?.originalname || "Document"}
               style={{ width: "100%", height: "68vh", border: "none" }}
+              onLoad={() => {
+                // Restore scroll position after iframe loads
+                if (savedScrollPos > 0 && iframeRef.current?.contentWindow) {
+                  try {
+                    iframeRef.current.contentWindow.scrollTo(0, savedScrollPos);
+                  } catch (e) {
+                    // Cross-origin, can't restore scroll
+                  }
+                }
+              }}
             />
           ) : (
             <div className="p-3">
