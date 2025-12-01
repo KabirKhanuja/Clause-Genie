@@ -4,11 +4,11 @@ import logger from '../utils/logger.js';
 import crypto from 'crypto';
 
 
-/*
- ive implemented vector store using cloud embeddings + Redis JSON blobs
- it bascially stores chunk arrays under key: session:{sessionId}:doc:{docId}:chunks
- each chunk: { chunkId, text, embedding: [float,...], createdAt }
- */
+
+ //ive implemented vector store using cloud embeddings + Redis JSON blobs
+ //it bascially stores chunk arrays under key: session:{sessionId}:doc:{docId}:chunks
+ //each chunk: { chunkId, text, embedding: [float,...], createdAt }
+ 
 
 
 const EMBEDDING_API_URL = process.env.EMBEDDING_API_URL || '';
@@ -137,8 +137,7 @@ function docChunksKey(sessionId, docId) {
   return `session:${sessionId}:doc:${docId}:chunks`;
 }
 
-/**
- upsertDocChunks(sessionId, docId, chunksTexts[])
+/* upsertDocChunks(sessionId, docId, chunksTexts[])
  chunkTexts: array of strings
  stores chunk objects in Redis under docChunksKey
  
@@ -150,8 +149,8 @@ function docChunksKey(sessionId, docId) {
    createdAt: ISO
  }
  
- returns: { docKey, inserted: n }
- */
+ returns: { docKey, inserted: n } */
+
 export async function upsertDocChunks(sessionId, docId, chunkTexts = []) {
   if (!sessionId || !docId) throw new Error('missing sessionId or docId');
   const client = await connectRedis();
@@ -175,10 +174,10 @@ export async function upsertDocChunks(sessionId, docId, chunkTexts = []) {
   }
 }
 
-/*
- getAllChunks(sessionId)
- returns array of { docId, chunkId, text, embedding }
- */
+
+ //getAllChunks(sessionId)
+ //returns array of { docId, chunkId, text, embedding }
+ 
 export async function getAllChunksForSession(sessionId) {
   const client = await connectRedis();
   const pattern = `session:${sessionId}:doc:*:chunks`;
@@ -211,12 +210,12 @@ export async function getAllChunksForSession(sessionId) {
   }
 }
 
-/**
- searchSession(sessionId, queryText, topK = 5)
- embeds the query
- computes cosine similarity to all chunks in the session
- returns topK results sorted by score desc
- */
+
+ //searchSession(sessionId, queryText, topK = 5)
+ //embeds the query
+ //computes cosine similarity to all chunks in the session
+ //returns topK results sorted by score desc
+
 export async function searchSession(sessionId, queryText, topK = 5) {
   if (!queryText) return [];
   const queryEmbeds = await embedBatch([queryText]);
@@ -236,7 +235,7 @@ export async function searchSession(sessionId, queryText, topK = 5) {
   return scored.slice(0, topK);
 }
 
-/* clearDocChunks(sessionId, docId) */
+// clearDocChunks(sessionId, docId) 
 export async function clearDocChunks(sessionId, docId) {
   const client = await connectRedis();
   const key = docChunksKey(sessionId, docId);
