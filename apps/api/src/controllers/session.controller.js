@@ -2,6 +2,7 @@ import { connectRedis } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 import path from 'path';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import config from '../config/index.js';
 
 /**
@@ -15,7 +16,6 @@ const getSession = async (req, res, next) => {
 
     const client = await connectRedis();
 
-    // this finds all meta keys for this session
     const pattern = `session:${sessionId}:doc:*:meta`;
     const keys = await client.keys(pattern);
 
@@ -94,7 +94,7 @@ const getDoc = async (req, res, next) => {
 
 /**
  * GET /api/session/:sessionId/doc/:docId/file
- * Streams the original uploaded file for preview (if still present on disk)
+ * Streams the original uploaded file (if available on disk).
  */
 const getDocFile = async (req, res, next) => {
   try {
@@ -103,34 +103,49 @@ const getDocFile = async (req, res, next) => {
 
     const client = await connectRedis();
     const metaKey = `session:${sessionId}:doc:${docId}:meta`;
-    const meta = await client.hGetAll(metaKey);
+    const meta = await client.hGetAll(metaKey).catch(() => ({}));
 
-    const rawPath = meta?.path;
-    if (!rawPath) return res.status(404).json({ error: 'file not available' });
+    if (!meta || Object.keys(meta).length === 0) {
+      return res.status(404).json({ error: 'document not found' });
+    }
 
-    const uploadsRoot = path.resolve(config.uploadDir);
-    const absPath = path.resolve(uploadsRoot, path.basename(rawPath));
-
-    if (!absPath.startsWith(uploadsRoot) || !fs.existsSync(absPath)) {
-      const rawAbs = path.resolve(rawPath);
-      if (rawAbs.startsWith(uploadsRoot) && fs.existsSync(rawAbs)) {
-        logger.info({ sessionId, docId, rawPath, uploadsRoot, absPath: rawAbs }, 'Serving document using stored absolute path');
-        return res.sendFile(rawAbs, (err) => {
-          if (err) {
-            return res.status(404).json({ error: 'file not available' });
-          }
-        });
+    // If server-side HTML preview exists in Redis, return it directly
+    if (meta.fileHtml) {
+      try {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(meta.fileHtml);
+        return;
+      } catch (err) {
+        logger.error({ err, sessionId, docId }, 'Failed to send HTML preview');
+        return res.status(500).json({ error: 'failed to serve HTML preview' });
       }
+    }
 
-      logger.warn({ sessionId, docId, rawPath, uploadsRoot, absPath }, 'Document file not found under uploads');
+    const filePath = meta.path || meta.filePath || '';
+    if (!filePath) {
       return res.status(404).json({ error: 'file not available' });
     }
 
-    return res.sendFile(absPath, (err) => {
-      if (err) {
-        return res.status(404).json({ error: 'file not available' });
-      }
+    try {
+      await fsPromises.access(filePath, fs.constants.R_OK);
+    } catch (err) {
+      return res.status(404).json({ error: 'file not available' });
+    }
+
+    const mime = meta.mimetype || 'application/octet-stream';
+    const filename = meta.originalname || path.basename(filePath);
+
+    res.setHeader('Content-Type', mime);
+    const disposition = mime === 'application/pdf' || mime.startsWith('image/') ? 'inline' : 'attachment';
+    res.setHeader('Content-Disposition', `${disposition}; filename="${encodeURIComponent(filename)}"`);
+
+    const readStream = fs.createReadStream(filePath);
+    readStream.on('error', (err) => {
+      logger.error({ err, sessionId, docId, filePath }, 'Failed streaming file');
+      if (!res.headersSent) res.status(500).json({ error: 'file read error' });
     });
+
+    readStream.pipe(res);
   } catch (err) {
     logger.error({ err, sessionId: req.params?.sessionId, docId: req.params?.docId }, 'Failed to stream document file');
     next(err);

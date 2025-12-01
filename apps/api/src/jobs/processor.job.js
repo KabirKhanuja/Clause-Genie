@@ -123,6 +123,44 @@ const worker = new Worker('parse-queue', async job => {
     ) {
       const result = await mammoth.extractRawText({ path: filePath });
       extractedText = result.value || '';
+
+      try {
+        const htmlResult = await mammoth.convertToHtml({ path: filePath, convertImage: mammoth.images.inline() });
+        const bodyHtml = htmlResult && htmlResult.value ? String(htmlResult.value) : '';
+
+        const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Preview</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #ffffff;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    p { margin: 0 0 1em 0; }
+    h1, h2, h3, h4, h5, h6 { margin: 1.5em 0 0.5em 0; }
+    img { max-width: 100%; height: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    td, th { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  ${bodyHtml}
+</body>
+</html>`;
+
+        meta._fileHtml = fullHtml;
+      } catch (e) {
+        logger.warn({ err: e, sessionId, docId: meta.docId }, 'Failed to convert DOCX to HTML (mammoth)');
+      }
     } else if (meta.mimetype && meta.mimetype.startsWith('image/')) {
       // placeholder: we can integrate OCR with integrating tesseract.js here (async)
       extractedText = '[image file — OCR not implemented]';
@@ -137,6 +175,9 @@ const worker = new Worker('parse-queue', async job => {
     }
 
     // will store results in Redis under session key
+    extractedText = String(extractedText || '');
+    logger.info({ sessionId, docId: meta.docId, textLength: extractedText.length }, 'Parsed text length');
+
     const client = await connectRedis();
     const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
     const textKey = `session:${sessionId}:doc:${meta.docId}:text`;
@@ -145,7 +186,7 @@ const worker = new Worker('parse-queue', async job => {
 
     const preview = (extractedText || '').slice(0, 300);
 
-    await client.hSet(metaKey, {
+    const metaFields = {
       parsedAt: new Date().toISOString(),
       status: 'parsed',
       preview,
@@ -153,7 +194,14 @@ const worker = new Worker('parse-queue', async job => {
       originalname: meta.originalname || '',
       mimetype: meta.mimetype || '',
       size: meta.size != null ? String(meta.size) : ''
-    });
+    };
+
+    // if the conversion above stored HTML in meta._fileHtml, persist it
+    if (meta._fileHtml) {
+      metaFields.fileHtml = meta._fileHtml;
+    }
+
+    await client.hSet(metaKey, metaFields);
 
     // applying TTL to metadata hash so it expires with parsed data
     await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
