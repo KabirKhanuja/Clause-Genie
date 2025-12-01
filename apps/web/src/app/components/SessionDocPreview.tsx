@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 type DocMeta = {
   docId: string;
@@ -19,6 +19,7 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<"parsed" | "document">("parsed");
   const [error, setError] = useState<string | null>(null);
+  const [iframeSrc, setIframeSrc] = useState<string | null>(null);
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? "http://localhost:4000" : "");
 
   useEffect(() => {
@@ -71,6 +72,16 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
     return () => { cancelled = true; };
   }, [sessionId, docId]);
 
+  // memoize original file URL to avoid iframe reloads when toggling view
+  useEffect(() => {
+    if (sessionId && meta?.docId) {
+      const url = `${API_BASE}/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(meta.docId)}/file`;
+      setIframeSrc(url);
+    } else {
+      setIframeSrc(null);
+    }
+  }, [API_BASE, sessionId, meta?.docId]);
+
   function highlightedHtml(text: string | null, q?: string) {
     if (!text) return "";
     if (!q) return escapeHtml(text);
@@ -117,54 +128,64 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
         </div>
       </div>
 
-      <div className="rounded bg-[#061026]/30 border border-slate-700 p-3 min-h-[200px] max-h-[68vh] overflow-auto">
-        {loading && <div className="text-slate-400">Loading preview…</div>}
-        {error && <div className="text-sm text-red-400">{error}</div>}
+      <div className="rounded bg-[#061026]/30 border border-slate-700 p-3 min-h-[200px] max-h-[68vh] overflow-hidden relative">
+        {loading && <div className="text-slate-400 p-4">Loading preview…</div>}
+        {error && <div className="text-sm text-red-400 p-4">{error}</div>}
 
-        {!loading && !error && !meta && <div className="text-slate-400">Select a document to preview</div>}
+        {!loading && !meta && <div className="text-slate-400 p-4">Select a document to preview</div>}
 
-        {!loading && meta && view === "parsed" && (
-          <div className="prose prose-sm text-slate-200">
-            {/* show first 2000 chars nicely */}
-            <div style={{ whiteSpace: "pre-wrap", fontFamily: "ui-sans-serif, system-ui, -apple-system" }} dangerouslySetInnerHTML={{ __html: highlightedHtml(meta.text || meta.preview || "", undefined) }} />
-          </div>
-        )}
+        {/* Parsed view (always mounted — hidden with CSS instead of unmounted) */}
+        <div
+          style={{
+            display: view === "parsed" ? "block" : "none",
+            overflow: "auto",
+            height: "100%"
+          }}
+          className="prose prose-sm text-slate-200 p-3"
+        >
+          <div
+            style={{ whiteSpace: "pre-wrap", fontFamily: "ui-sans-serif, system-ui, -apple-system" }}
+            dangerouslySetInnerHTML={{
+              __html: highlightedHtml(meta?.text || meta?.preview || "", undefined)
+            }}
+          />
+        </div>
 
-        {!loading && meta && view === "document" && (
-          <div className="w-full">
-            {/* try to render original file inline if it's an image or pdf */}
-            {meta.mimetype && meta.mimetype.startsWith('image/') ? (
-              <img
-                src={`${API_BASE}/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(meta.docId)}/file`}
-                alt={meta.originalname}
-                className="max-w-full rounded shadow"
-              />
-            ) : meta.mimetype === 'application/pdf' || (meta.originalname && meta.originalname.toLowerCase().endsWith('.pdf')) ? (
-              <embed
-                src={`${API_BASE}/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(meta.docId)}/file`}
-                type="application/pdf"
-                width="100%"
-                height="420px"
-              />
-            ) : (
-              <div>
-                <div className="text-slate-400 mb-2">Original file preview not available for this file type.</div>
-                <a
-                  className="inline-block px-3 py-2 bg-[#0f1724] text-slate-200 rounded"
-                  href={`${API_BASE}/api/session/${encodeURIComponent(sessionId)}/doc/${encodeURIComponent(meta.docId)}/file`}
-                  target="_blank" rel="noreferrer"
-                >
-                  Open / Download original
-                </a>
-
-                <div className="mt-4 text-slate-300 text-sm">
-                  <div className="font-medium mb-1">Parsed preview</div>
-                  <div style={{ whiteSpace: "pre-wrap" }}>{meta.preview}</div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Document view (always mounted — iframe NEVER unmounts) */}
+        <div
+          style={{
+            display: view === "document" ? "block" : "none",
+            height: "100%"
+          }}
+        >
+          {meta?.mimetype?.startsWith("image/") ? (
+            <img
+              src={iframeSrc || ""}
+              alt={meta?.originalname}
+              className="max-w-full rounded shadow block mx-auto"
+              style={{ maxHeight: "68vh", width: "auto" }}
+            />
+          ) : meta?.mimetype === "application/pdf" ||
+            meta?.originalname?.toLowerCase().endsWith(".pdf") ? (
+            <iframe
+              src={iframeSrc || ""}
+              title={meta?.originalname || "Document"}
+              style={{ width: "100%", height: "68vh", border: "none" }}
+            />
+          ) : (
+            <div className="p-3">
+              <div className="text-slate-400 mb-2">Original file preview not available.</div>
+              <a
+                className="inline-block px-3 py-2 bg-[#0f1724] text-slate-200 rounded"
+                href={`${API_BASE}/api/session/${sessionId}/doc/${meta?.docId}/file`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open / Download original
+              </a>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

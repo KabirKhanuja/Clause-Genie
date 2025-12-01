@@ -109,6 +109,18 @@ const getDocFile = async (req, res, next) => {
       return res.status(404).json({ error: 'document not found' });
     }
 
+    // If server-side HTML preview exists in Redis, return it directly
+    if (meta.fileHtml) {
+      try {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(meta.fileHtml);
+        return;
+      } catch (err) {
+        logger.error({ err, sessionId, docId }, 'Failed to send HTML preview');
+        return res.status(500).json({ error: 'failed to serve HTML preview' });
+      }
+    }
+
     const filePath = meta.path || meta.filePath || '';
     if (!filePath) {
       return res.status(404).json({ error: 'file not available' });
