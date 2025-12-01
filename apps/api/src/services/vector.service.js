@@ -5,8 +5,8 @@ import crypto from 'crypto';
 
 
 /*
-vector store using cloud embeddings + Redis JSON blobs
- stores chunk arrays under key: session:{sessionId}:doc:{docId}:chunks
+ ive implemented vector store using cloud embeddings + Redis JSON blobs
+ it bascially stores chunk arrays under key: session:{sessionId}:doc:{docId}:chunks
  each chunk: { chunkId, text, embedding: [float,...], createdAt }
  */
 
@@ -19,9 +19,9 @@ if (!EMBEDDING_API_URL || !EMBEDDING_API_KEY) {
   logger.warn('VectorService: EMBEDDING_API_URL and/or EMBEDDING_API_KEY not set. Embedding calls will fail until configured.');
 }
 
-/**
- * chunkText: naive chunking with overlap
- * returns array of strings (chunks)
+/*
+ chunkText: naive chunking with overlap
+ returns array of strings (chunks)
  */
 
 export function chunkText(text, opts = {}) {
@@ -41,8 +41,8 @@ export function chunkText(text, opts = {}) {
 }
 
 /*
- embedBatch - call embedding API for an array of texts
- returns array of embeddings (Float32Array converted to regular arrays)
+ embedBatch- it calls embedding API for an array of texts
+ and returns array of embeddings (Float32Array converted to regular arrays)
  */
 export async function embedBatch(texts = []) {
   if (!Array.isArray(texts) || texts.length === 0) return [];
