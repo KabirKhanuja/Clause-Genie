@@ -19,6 +19,7 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
 import mammoth from 'mammoth';
 import { connectRedis } from '../utils/redisClient.js';
 import config, { parsedTtlSeconds } from '../config/index.js';
+import vectorService from '../services/vector.service.js';
 
 const connection = {
   host: config.redis.host,
@@ -196,12 +197,26 @@ const worker = new Worker('parse-queue', async job => {
       size: meta.size != null ? String(meta.size) : ''
     };
 
-    // if the conversion above stored HTML in meta._fileHtml, persist it
     if (meta._fileHtml) {
       metaFields.fileHtml = meta._fileHtml;
     }
 
     await client.hSet(metaKey, metaFields);
+
+    // chunk and upsert embeddings after persisting meta 
+    try {
+      const CHUNK_OPTS = { chunkSize: 1500, overlap: 200 };
+      const chunks = vectorService.chunkText(String(extractedText || ''), CHUNK_OPTS);
+
+      if (chunks.length > 0) {
+        const upsertResult = await vectorService.upsertDocChunks(sessionId, meta.docId, chunks);
+        logger.info({ sessionId, docId: meta.docId, insertedChunks: upsertResult.inserted }, 'Upserted doc chunks and embeddings');
+      } else {
+        logger.info({ sessionId, docId: meta.docId }, 'No chunks produced for document (empty or very small)');
+      }
+    } catch (vecErr) {
+      logger.warn({ err: vecErr, sessionId, docId: meta.docId }, 'Failed to create/upsert vector chunks (non-fatal)');
+    }
 
     // applying TTL to metadata hash so it expires with parsed data
     await client.expire(metaKey, parsedTtlSeconds).catch(() => {});

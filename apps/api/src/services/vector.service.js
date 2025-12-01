@@ -1,249 +1,254 @@
-import { v4 as uuidv4 } from 'uuid';
-import config from '../config/index.js';
+import fetch from 'node-fetch';
 import { connectRedis } from '../utils/redisClient.js';
+import logger from '../utils/logger.js';
+import crypto from 'crypto';
 
-/**
- * vector service responsibilities-
- *  chunkText(text): split text into overlapping chunks
- *  getEmbeddings(texts): returns embeddings[][] using configured provider
- *  upsertVectors(sessionId, docId, chunks, embeddings): stores chunk metadata+embedding into redis
- *  searchNearest(sessionId, topK, queryEmbedding): naive KNN over stored vectors for this session
+
+/*
+vector store using cloud embeddings + Redis JSON blobs
+ stores chunk arrays under key: session:{sessionId}:doc:{docId}:chunks
+ each chunk: { chunkId, text, embedding: [float,...], createdAt }
  */
 
-/*  chunking  */
+
+const EMBEDDING_API_URL = process.env.EMBEDDING_API_URL || '';
+const EMBEDDING_API_KEY = process.env.EMBEDDING_API_KEY || '';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'text-embedding-3-large';
+
+if (!EMBEDDING_API_URL || !EMBEDDING_API_KEY) {
+  logger.warn('VectorService: EMBEDDING_API_URL and/or EMBEDDING_API_KEY not set. Embedding calls will fail until configured.');
+}
+
+/**
+ * chunkText: naive chunking with overlap
+ * returns array of strings (chunks)
+ */
+
 export function chunkText(text, opts = {}) {
-  const chunkSize = Number(opts.chunkSize ?? config.rag?.chunkSize ?? 1000);
-  const overlap = Number(opts.chunkOverlap ?? config.rag?.chunkOverlap ?? 150);
-
-  if (!text || typeof text !== 'string') return [];
-
+  const chunkSize = opts.chunkSize || 800; 
+  const overlap = opts.overlap || 120;
   const chunks = [];
-  let start = 0;
-  const len = text.length;
-
-  while (start < len) {
-    const end = Math.min(start + chunkSize, len);
-    const chunkText = text.slice(start, end).trim();
-    if (chunkText.length > 0) {
-      chunks.push({
-        id: uuidv4(),
-        text: chunkText,
-        start,
-        end,
-      });
-    }
-    if (end === len) break;
-    start = Math.max(0, end - overlap);
+  if (!text || typeof text !== 'string') return chunks;
+  let i = 0;
+  while (i < text.length) {
+    const end = Math.min(text.length, i + chunkSize);
+    const c = text.slice(i, end).trim();
+    if (c) chunks.push(c);
+    if (end === text.length) break;
+    i = Math.max(0, end - overlap);
   }
-
   return chunks;
 }
 
-/*  embedding callers  */
-
-/**
- * getEmbeddings(texts: string[])
- * supports three strategies-
- * 1 if EMBED_API_URL env var is set then POST to that URL (body { model, input: [...texts] })
- * 2 if LOCAL_EMBED_HOST is set then call a local embedding service (assumes openai like /v1/embeddings)
- * 3 if OPENAI_API_KEY is set then call openai embeddings endpoint (openai-compatible)
- *
- * returned value: array of embedding arrays (number[])
+/*
+ embedBatch - call embedding API for an array of texts
+ returns array of embeddings (Float32Array converted to regular arrays)
  */
-export async function getEmbeddings(texts = [], opts = {}) {
+export async function embedBatch(texts = []) {
   if (!Array.isArray(texts) || texts.length === 0) return [];
 
-  const model = opts.model || config.rag?.embedModel || process.env.EMBED_MODEL || 'text-embedding-3-small';
-  const apiUrl = process.env.EMBED_API_URL || null;
-  const localHost = process.env.LOCAL_EMBED_HOST || null; // e.g. http://localhost:11434
-  const openaiKey = process.env.OPENAI_API_KEY || process.env.GPT_API_KEY || null;
+  if (!EMBEDDING_API_URL || !EMBEDDING_API_KEY) {
+    throw new Error('Embedding API not configured (EMBEDDING_API_URL/EMBEDDING_API_KEY)');
+  }
 
-  async function postJson(url, body, headers = {}) {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(() => '');
-      throw new Error(`Embedding API error (${res.status}): ${txt}`);
+  // basic rate safety that send batches of up to 16 items per request 
+  const BATCH_SIZE = 16;
+  const outEmbeds = [];
+
+  for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+    const batch = texts.slice(i, i + BATCH_SIZE);
+
+    try {
+      const body = JSON.stringify({
+        model: EMBEDDING_MODEL,
+        input: batch
+      });
+
+      const resp = await fetch(EMBEDDING_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${EMBEDDING_API_KEY}`
+        },
+        body
+      });
+
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        throw new Error(`Embedding API error ${resp.status}: ${txt}`);
+      }
+
+      const j = await resp.json().catch(() => null);
+
+      // provider differences- try common shapes
+      //  - { data: [{ embedding: [...] }, ...] }
+      //  - { embeddings: [...] }
+      //  - { embedding: [...] } for single
+      if (j == null) throw new Error('Empty embedding response');
+
+      if (Array.isArray(j.data) && j.data.length === batch.length) {
+        for (const item of j.data) {
+          if (Array.isArray(item.embedding)) outEmbeds.push(item.embedding.map(Number));
+          else if (Array.isArray(item.embeddings)) outEmbeds.push(item.embeddings.map(Number));
+          else outEmbeds.push([]);
+        }
+      } else if (Array.isArray(j.embeddings) && j.embeddings.length === batch.length) {
+        for (const e of j.embeddings) outEmbeds.push(Array.isArray(e) ? e.map(Number) : []);
+      } else if (Array.isArray(j.embedding) && batch.length === 1) {
+        outEmbeds.push(j.embedding.map(Number));
+      } else if (Array.isArray(j) && j.length === batch.length) {
+        for (const item of j) {
+          if (Array.isArray(item.embedding)) outEmbeds.push(item.embedding.map(Number));
+          else if (Array.isArray(item)) outEmbeds.push(item.map(Number));
+          else outEmbeds.push([]);
+        }
+      } else {
+        logger.warn({ resp: j }, 'embedBatch: unexpected embedding API response shape');
+        for (let k = 0; k < batch.length; k++) outEmbeds.push([]);
+      }
+    } catch (err) {
+      logger.error({ err }, 'embedBatch failed');
+      for (let k = 0; k < Math.min(BATCH_SIZE, texts.length - i); k++) outEmbeds.push([]);
     }
-    return res.json();
   }
 
-  // 1) custom EMBED_API_URL (user provided embedding gateway)
-  if (apiUrl) {
-    const resp = await postJson(apiUrl, { model, input: texts });
-    if (Array.isArray(resp?.data)) return resp.data.map((d) => d.embedding);
-    if (Array.isArray(resp?.embeddings)) return resp.embeddings;
-    if (Array.isArray(resp) && Array.isArray(resp[0])) return resp;
-    throw new Error('Unexpected response from EMBED_API_URL');
-  }
-
-  // 2) local host (self-hosted embedding server)
-  if (localHost) {
-    const url = `${localHost.replace(/\/$/, '')}/v1/embeddings`;
-    const payload = { model, input: texts };
-    const resp = await postJson(url, payload);
-    if (Array.isArray(resp?.data)) return resp.data.map((d) => d.embedding);
-    if (Array.isArray(resp?.embeddings)) return resp.embeddings;
-    throw new Error('Unexpected response from LOCAL_EMBED_HOST');
-  }
-
-  // 3) OpenAI-compatible (official API)
-  if (openaiKey) {
-    const url = `https://api.openai.com/v1/embeddings`;
-    const resp = await postJson(url, { model, input: texts }, { Authorization: `Bearer ${openaiKey}` });
-    if (Array.isArray(resp?.data)) return resp.data.map((d) => d.embedding);
-    if (Array.isArray(resp?.embeddings)) return resp.embeddings;
-    throw new Error('Unexpected response from OpenAI embeddings endpoint');
-  }
-
-  throw new Error('No embedding provider configured. Set EMBED_API_URL, LOCAL_EMBED_HOST or OPENAI_API_KEY.');
+  return outEmbeds;
 }
 
-/*  Redis vector storage  */
-
-/**
- * upsertVectors(sessionId, docId, chunks, embeddings)
- * sessionId: string
- * docId: string
- * chunks: [{id,text,start,end}]
- * embeddings: number[][] same length as chunks
- *
- * it stores each chunk in redis as hash
- *  key: session:{sessionId}:doc:{docId}:chunk:{chunkId}
- *  fields: id, text, start, end, embedding (JSON), score (optional)
- *
- * Also keeps a set/list of chunk keys for the session+doc to ease retrieval:
- *  key: session:{sessionId}:doc:{docId}:chunks -> SADD each chunkKey
+/*
+ cosineSimilarity between two arrays
  */
-export async function upsertVectors(sessionId, docId, chunks = [], embeddings = []) {
-  if (!sessionId || !docId) throw new Error('sessionId and docId required');
-  if (!Array.isArray(chunks) || chunks.length === 0) return [];
-
-  const client = await connectRedis();
-
-  const chunkKeys = [];
-  for (let i = 0; i < chunks.length; i++) {
-    const c = chunks[i];
-    const emb = embeddings && embeddings[i] ? embeddings[i] : null;
-    const chunkKey = `session:${sessionId}:doc:${docId}:chunk:${c.id}`;
-    const fields = {
-      id: c.id,
-      start: String(c.start ?? 0),
-      end: String(c.end ?? 0),
-      text: c.text ?? '',
-      embedding: emb ? JSON.stringify(emb) : '',
-    };
-    await client.hSet(chunkKey, fields);
-    await client.sAdd(`session:${sessionId}:doc:${docId}:chunks`, chunkKey);
-    chunkKeys.push(chunkKey);
-  }
-
-  if (config.parsedTtlSeconds) {
-    const ttl = Number(config.parsedTtlSeconds);
-    for (const k of chunkKeys) {
-      await client.expire(k, ttl).catch(() => {});
-    }
-    await client.expire(`session:${sessionId}:doc:${docId}:chunks`, ttl).catch(() => {});
-  }
-
-  return chunkKeys;
-}
-
-/*  naive KNN search (Pull all, compute cosine locally)  */
-
-/**
- * computeCosine(a,b) -> number
- */
-function computeCosine(a = [], b = []) {
+function cosineSimilarity(a = [], b = []) {
   if (!a || !b || a.length === 0 || b.length === 0 || a.length !== b.length) return -1;
   let dot = 0, na = 0, nb = 0;
   for (let i = 0; i < a.length; i++) {
-    const ai = Number(a[i]) || 0;
-    const bi = Number(b[i]) || 0;
-    dot += ai * bi;
-    na += ai * ai;
-    nb += bi * bi;
+    const va = Number(a[i]) || 0;
+    const vb = Number(b[i]) || 0;
+    dot += va * vb;
+    na += va * va;
+    nb += vb * vb;
   }
   if (na === 0 || nb === 0) return -1;
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
 
-/**
- * searchNearest(sessionId, docId, queryEmbedding, topK)
- * if docId given, search only that doc's chunks; otherwise search whole session
- * my current implementation pulls stored chunk hashes and computes cosine similarity on JS side
- * returns [{chunkKey, docId, chunkId, score, text, start, end}]
- */
-export async function searchNearest(sessionId, queryEmbedding, topK = 5, docId = null) {
-  if (!sessionId || !Array.isArray(queryEmbedding)) return [];
-  const client = await connectRedis();
 
-  let chunkKeys = [];
-  if (docId) {
-    chunkKeys = await client.sMembers(`session:${sessionId}:doc:${docId}:chunks`).catch(() => []);
-  } else {
-    const pattern = `session:${sessionId}:doc:*:chunks`;
-    const sets = await client.keys(pattern).catch(() => []);
-    for (const setKey of sets) {
-      const members = await client.sMembers(setKey).catch(() => []);
-      chunkKeys.push(...members);
-    }
-  }
-
-  if (!chunkKeys || chunkKeys.length === 0) return [];
-
-  const results = [];
-  for (const chunkKey of chunkKeys) {
-    const h = await client.hGetAll(chunkKey).catch(() => ({}));
-    if (!h || !h.embedding) continue;
-    let emb;
-    try {
-      emb = JSON.parse(h.embedding);
-    } catch (e) {
-      continue;
-    }
-    const score = computeCosine(queryEmbedding, emb);
-    results.push({
-      chunkKey,
-      chunkId: h.id,
-      text: h.text,
-      start: Number(h.start || 0),
-      end: Number(h.end || 0),
-      score
-    });
-  }
-
-  results.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
-  return results.slice(0, topK);
+function docChunksKey(sessionId, docId) {
+  return `session:${sessionId}:doc:${docId}:chunks`;
 }
 
-/* embed and store convenience */
+/**
+ upsertDocChunks(sessionId, docId, chunksTexts[])
+ chunkTexts: array of strings
+ stores chunk objects in Redis under docChunksKey
+ 
+ each stored chunk object:
+ {
+   chunkId: "<random>",
+   text: "...",
+   embedding: [...],
+   createdAt: ISO
+ }
+ 
+ returns: { docKey, inserted: n }
+ */
+export async function upsertDocChunks(sessionId, docId, chunkTexts = []) {
+  if (!sessionId || !docId) throw new Error('missing sessionId or docId');
+  const client = await connectRedis();
+
+  const embeddings = await embedBatch(chunkTexts);
+
+  const chunks = chunkTexts.map((txt, idx) => ({
+    chunkId: crypto.randomUUID ? crypto.randomUUID() : crypto.createHash('sha1').update(`${Date.now()}-${Math.random()}-${idx}`).digest('hex'),
+    text: txt,
+    embedding: Array.isArray(embeddings[idx]) ? embeddings[idx] : [],
+    createdAt: new Date().toISOString()
+  }));
+
+  const key = docChunksKey(sessionId, docId);
+  try {
+    await client.set(key, JSON.stringify(chunks), { EX: 24 * 3600 }); // TTL 24h (same as parsed data)
+    return { docKey: key, inserted: chunks.length };
+  } catch (err) {
+    logger.error({ err, sessionId, docId }, 'upsertDocChunks failed');
+    throw err;
+  }
+}
+
+/*
+ getAllChunks(sessionId)
+ returns array of { docId, chunkId, text, embedding }
+ */
+export async function getAllChunksForSession(sessionId) {
+  const client = await connectRedis();
+  const pattern = `session:${sessionId}:doc:*:chunks`;
+  try {
+    const keys = await client.keys(pattern);
+    const all = [];
+    for (const k of keys) {
+      const raw = await client.get(k).catch(() => null);
+      if (!raw) continue;
+      try {
+        const arr = JSON.parse(raw);
+        const m = k.match(/session:[^:]+:doc:([^:]+):chunks$/);
+        const docId = m ? m[1] : null;
+        for (const c of (arr || [])) {
+          all.push({
+            docId,
+            chunkId: c.chunkId,
+            text: c.text,
+            embedding: c.embedding || []
+          });
+        }
+      } catch (e) {
+        logger.warn({ err: e, key: k }, 'Malformed chunk array JSON');
+      }
+    }
+    return all;
+  } catch (err) {
+    logger.error({ err, sessionId }, 'getAllChunksForSession failed');
+    return [];
+  }
+}
 
 /**
- * embedAndStore(sessionId, docId, text, opts)
- * chunks the text
- * embeds chunks
- * upserts into redis
- * returns chunks array with embeddings
+ searchSession(sessionId, queryText, topK = 5)
+ embeds the query
+ computes cosine similarity to all chunks in the session
+ returns topK results sorted by score desc
  */
-export async function embedAndStore(sessionId, docId, text, opts = {}) {
-  const chunks = chunkText(text, opts);
-  if (chunks.length === 0) return { chunks: [], embeddings: [] };
+export async function searchSession(sessionId, queryText, topK = 5) {
+  if (!queryText) return [];
+  const queryEmbeds = await embedBatch([queryText]);
+  const qEmb = queryEmbeds[0] || [];
+  if (!qEmb || qEmb.length === 0) return [];
 
-  const texts = chunks.map((c) => c.text);
-  const embeddings = await getEmbeddings(texts, opts);
-  await upsertVectors(sessionId, docId, chunks, embeddings);
-  for (let i = 0; i < chunks.length; i++) chunks[i].embedding = embeddings[i] || null;
-  return { chunks, embeddings };
+  const all = await getAllChunksForSession(sessionId);
+  const scored = [];
+  for (const c of all) {
+    if (!c.embedding || c.embedding.length === 0) continue;
+    const score = cosineSimilarity(qEmb, c.embedding);
+    if (score <= 0) continue;
+    scored.push({ ...c, score });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, topK);
+}
+
+/* clearDocChunks(sessionId, docId) */
+export async function clearDocChunks(sessionId, docId) {
+  const client = await connectRedis();
+  const key = docChunksKey(sessionId, docId);
+  await client.del(key).catch(() => {});
+  return true;
 }
 
 export default {
   chunkText,
-  getEmbeddings,
-  upsertVectors,
-  searchNearest,
-  embedAndStore
+  embedBatch,
+  upsertDocChunks,
+  getAllChunksForSession,
+  searchSession,
+  clearDocChunks
 };
