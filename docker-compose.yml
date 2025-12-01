@@ -1,13 +1,12 @@
 version: "3.8"
 services:
   redis:
-    image: redis:7
+    image: redis/redis-stack:latest
     container_name: clause-redis
     ports:
       - "6379:6379"
     volumes:
-      - ./docker/redis-data:/data
-    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+      - redisdata:/data
     restart: unless-stopped
 
   redisinsight:
@@ -16,3 +15,6 @@ services:
     ports:
       - "8001:8001"
     restart: unless-stopped
+
+volumes:
+  redisdata:
