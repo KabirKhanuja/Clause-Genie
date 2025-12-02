@@ -19,7 +19,14 @@ export default {
   },
   uploadDir: process.env.UPLOAD_DIR || './src/uploads',
   maxUploadMB: Number(process.env.MAX_UPLOAD_MB || 50),
-  keepUploads: process.env.KEEP_UPLOADS === 'true' || false
+  keepUploads: process.env.KEEP_UPLOADS === 'true' || false,
+  rag: {
+    embedModel: process.env.EMBED_MODEL || 'text-embedding-3-small',
+    vectorIndex: process.env.VECTOR_INDEX || 'clause_chunks',
+    vectorDimension: Number(process.env.VECTOR_DIM || 1536),
+    chunkSize: Number(process.env.CHUNK_SIZE || 1000),
+    chunkOverlap: Number(process.env.CHUNK_OVERLAP || 150)
+  }
 };
 
 // Parsed data TTL in second which is set for 24 hours 
