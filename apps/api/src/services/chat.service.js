@@ -116,7 +116,9 @@ export async function answerQuestion({ sessionId, docId, question }) {
     try {
       const { text } = await callLLM(ragPrompt);
       const answer = (text || 'No answer from LLM').toString();
-      const citations = (results || []).map(r => ({ docId: r.docId, chunkId: r.chunkId, score: r.score }));
+      const citations = Array.from(new Set(
+        (results || []).map(r => `session:${sessionId}:doc:${r.docId}#chunk:${r.chunkId}`)
+      )).filter(Boolean);
       return { answer, citations };
     } catch (e) {
       logger.warn({ err: e }, 'LLM call failed — falling back to snippet reply');
@@ -126,7 +128,9 @@ export async function answerQuestion({ sessionId, docId, question }) {
   // 5) last resort lol basic reply from top chunks
   const topSnippet = results[0] && results[0].text ? results[0].text.slice(0, 1800) : '';
   const answer = `Found relevant excerpt(s) — using them to answer:\n\n${topSnippet}\n\n(Enable LLM credentials to generate a more natural answer)`;
-  const citations = (results || []).map(r => ({ docId: r.docId, chunkId: r.chunkId, score: r.score }));
+  const citations = Array.from(new Set(
+    (results || []).map(r => `session:${sessionId}:doc:${r.docId}#chunk:${r.chunkId}`)
+  )).filter(Boolean);
   return { answer, citations };
 }
 

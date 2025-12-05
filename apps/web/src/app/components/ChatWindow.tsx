@@ -145,12 +145,77 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
               <div className="text-slate-400 text-sm">Ask questions about the selected document. Genie will use retrieved context to answer.</div>
             )}
 
-            {messages.map((m) => (
-              <div key={m.id} className={`p-3 rounded ${m.role === "user" ? "bg-[#052033] text-slate-200 self-end" : "bg-[#0f1724] text-slate-200 self-start"}`}>
-                <div className="text-sm whitespace-pre-wrap">{m.text}</div>
-                {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
-              </div>
-            ))}
+            {messages.map((m) => {
+              const citationMatch = typeof m.text === "string"
+                ? m.text.match(/session:[^:]+:doc:([^#]+)#chunk:([^\s]+)/)
+                : null;
+
+              const isCitation = Boolean(citationMatch);
+
+              if (isCitation) {
+                const [, docId, chunkId] = citationMatch as RegExpMatchArray;
+                const shortDoc = docId.slice(0, 8) + (docId.length > 8 ? "…" : "");
+                const shortChunk = chunkId.slice(0, 8) + (chunkId.length > 8 ? "…" : "");
+
+                const handleOpen = () => {
+                  if (typeof window !== "undefined") {
+                    window.location.hash = `doc-${docId}`;
+                  }
+                };
+
+                const handleCopy = async () => {
+                  try {
+                    if (navigator?.clipboard?.writeText) {
+                      await navigator.clipboard.writeText(m.text as string);
+                      alert("Citation copied to clipboard");
+                    }
+                  } catch (err) {
+                    console.error("Failed to copy citation", err);
+                  }
+                };
+
+                return (
+                  <div
+                    key={m.id}
+                    className="p-3 rounded bg-[#0f1724] text-slate-200 self-start border border-slate-700/60"
+                  >
+                    <div className="text-xs uppercase tracking-wide text-slate-400 mb-1">Citation</div>
+                    <div className="text-sm text-slate-100 mb-2">
+                       source: doc:{shortDoc} #chunk:{shortChunk}
+                    </div>
+                    <div className="flex gap-2 text-xs">
+                      <button
+                        onClick={handleOpen}
+                        className="px-2 py-1 rounded bg-[#0b6b88] text-white hover:bg-[#0d7fa1]"
+                      >
+                        Open document
+                      </button>
+                      <button
+                        onClick={handleCopy}
+                        className="px-2 py-1 rounded border border-slate-600 text-slate-200 hover:bg-slate-800"
+                      >
+                        Copy citation
+                      </button>
+                    </div>
+                    {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={m.id}
+                  className={`p-3 rounded ${
+                    m.role === "user"
+                      ? "bg-[#052033] text-slate-200 self-end"
+                      : "bg-[#0f1724] text-slate-200 self-start"
+                  }`}
+                >
+                  <div className="text-sm whitespace-pre-wrap">{m.text}</div>
+                  {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
+                </div>
+              );
+            })}
           </div>
 
           <div className="p-3 border-t border-slate-700">
