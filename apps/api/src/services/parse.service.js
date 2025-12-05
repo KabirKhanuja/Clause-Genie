@@ -15,9 +15,7 @@ const queue = new Queue('parse-queue', {
   }
 });
 
-/**
- * Enqueue a document parse job. If enqueue fails, fallback to simple store.
- */
+
 export async function enqueueDocumentParsing(sessionId, meta) {
   try {
     await queue.add('parse', { sessionId, meta });
@@ -32,19 +30,13 @@ export async function enqueueDocumentParsing(sessionId, meta) {
   }
 }
 
-/**
- * Inline minimal parse / metadata store: store meta in Redis and create an initial preview
- * If `markAsUploaded` is true, store status as 'uploaded' (initial state). Otherwise this
- * function may be used as a fallback to mark as 'parsed' (legacy behaviour)
- */
 export async function simpleParseAndStore(sessionId, meta, opts = { markAsUploaded: false }) {
   const client = await connectRedis();
   const metaKey = `session:${sessionId}:doc:${meta.docId}:meta`;
 
   const status = opts.markAsUploaded ? 'uploaded' : 'parsed';
 
-  // store metadata as string fields for reliable retrieval
-  // mark as uploaded / pending parse — worker will flip to "parsed"
+
   await client.hSet(metaKey, {
     docId: meta.docId,
     originalname: meta.originalname,
@@ -52,29 +44,24 @@ export async function simpleParseAndStore(sessionId, meta, opts = { markAsUpload
     mimetype: meta.mimetype || '',
     path: meta.path || '',
     uploadedAt: meta.uploadedAt || new Date().toISOString(),
-    status: 'uploaded',      // <-- important: indicates processing is pending
-    parsedAt: ''             // still empty until worker completes parsing
+    status: 'uploaded',      
+    parsedAt: ''             
   });
 
-  // ensure metadata expires after configured TTL
   if (parsedTtlSeconds && typeof parsedTtlSeconds === 'number') {
     await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
   }
 
-  // attempt a lightweight preview (non-blocking)
   try {
     if (opts.markAsUploaded) {
-      // keep preview minimal; worker will replace with real preview when done
       await client.hSet(metaKey, { preview: `${meta.originalname} uploaded — processing` }).catch(() => {});
       if (parsedTtlSeconds) await client.expire(metaKey, parsedTtlSeconds).catch(() => {});
       return true;
     }
 
-    // legacy/fallback behaviour: try to create a small preview from file content
     if (meta.mimetype === 'application/pdf') {
       await client.hSet(metaKey, { preview: 'PDF uploaded (processing)' });
     } else if (meta.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      // try to extract a small DOCX preview synchronously (lightweight)
       if (meta.path) {
         try {
           const result = await mammoth.extractRawText({ path: meta.path });
