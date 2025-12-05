@@ -13,7 +13,7 @@ import crypto from 'crypto';
 
 const EMBEDDING_API_URL = process.env.EMBEDDING_API_URL || '';
 const EMBEDDING_API_KEY = process.env.EMBEDDING_API_KEY || '';
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'text-embedding-3-large';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "nomic-embed-text";
 
 if (!EMBEDDING_API_URL || !EMBEDDING_API_KEY) {
   logger.warn('VectorService: EMBEDDING_API_URL and/or EMBEDDING_API_KEY not set. Embedding calls will fail until configured.');
