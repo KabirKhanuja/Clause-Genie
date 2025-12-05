@@ -2,6 +2,56 @@
 
 import { useEffect, useState } from "react";
 
+export function scrollToChunk(chunkId: string, snippet: string) {
+  const container = document.getElementById("doc-viewer");
+  if (!container) return;
+
+  const text = container.innerText.toLowerCase();
+  const needle = snippet.toLowerCase().slice(0, 40);
+  const idx = text.indexOf(needle);
+
+  if (idx === -1) return;
+
+  function highlight(node: Node): boolean {
+    if (node.nodeType === Node.TEXT_NODE && node.nodeValue) {
+      const lower = node.nodeValue.toLowerCase();
+      const pos = lower.indexOf(needle);
+      if (pos !== -1) {
+        const before = node.nodeValue.slice(0, pos);
+        const match = node.nodeValue.slice(pos, pos + snippet.length);
+        const after = node.nodeValue.slice(pos + snippet.length);
+
+        const span = document.createElement("span");
+        span.className = "highlight-chunk";
+        span.textContent = match;
+
+        const fragment = document.createDocumentFragment();
+        fragment.append(document.createTextNode(before), span, document.createTextNode(after));
+
+        if (node.parentNode) {
+          node.parentNode.replaceChild(fragment, node);
+        }
+
+        span.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        // this is the chat time highlight effect
+        setTimeout(() => {
+          span.style.background = "transparent";
+        }, 5000);
+
+        return true;
+      }
+    } else {
+      for (const child of Array.from(node.childNodes)) {
+        if (highlight(child)) return true;
+      }
+    }
+    return false;
+  }
+
+  highlight(container);
+}
+
 export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
@@ -107,6 +157,15 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
 
   return (
     <div className="h-full flex flex-col">
+      <style jsx>{`
+        .highlight-chunk {
+          background: rgba(255, 230, 0, 0.45);
+          padding: 2px 4px;
+          border-radius: 4px;
+          transition: background 1.5s ease;
+        }
+      `}</style>
+
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-2xl text-white font-semibold">{selectedDocId ? `Document: ${selectedDocId}` : "Select a document"}</h2>

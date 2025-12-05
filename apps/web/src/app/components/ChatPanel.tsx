@@ -1,22 +1,37 @@
-'use client';
-import { useState } from 'react';
+"use client";
+import { useState } from "react";
+import { scrollToChunk } from "../components/DocumentViewer";
 
-type Message = { role: 'user' | 'genie', text: string };
+type Message = { role: "user" | "genie"; text: string };
 
 export default function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'genie', text: 'Hi — upload a document and ask me anything about clauses, coverage, or policies.' }
+    { role: "genie", text: "Hi — upload a document and ask me anything about clauses, coverage, or policies." }
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
+
+  function openDocument(docId: string) {
+    if (typeof window !== "undefined") {
+      window.location.hash = `doc-${docId}`;
+    }
+  }
+
+  function handleCitationClick(c: { docId: string; chunkId: string; snippet?: string }) {
+    openDocument(c.docId);
+    setTimeout(() => {
+      if (c.snippet) {
+        scrollToChunk(c.chunkId, c.snippet);
+      }
+    }, 300);
+  }
 
   async function send() {
     if (!input.trim()) return;
-    const userMsg: Message = { role: 'user', text: input.trim() };
+    const userMsg: Message = { role: "user", text: input.trim() };
     setMessages((m) => [...m, userMsg]);
-    setInput('');
-    // mock genie response (later replace with API call)
+    setInput("");
     setTimeout(() => {
-      setMessages((m) => [...m, { role: 'genie', text: `Mock response to: "${userMsg.text}"` }]);
+      setMessages((m) => [...m, { role: "genie", text: `Mock response to: "${userMsg.text}"` }]);
     }, 700);
   }
 

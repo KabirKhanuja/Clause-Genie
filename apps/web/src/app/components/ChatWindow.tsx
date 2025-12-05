@@ -1,15 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import CitationChip from "../chat/CitationChip";
+
+type Citation = {
+  docId: string;
+  chunkId: string;
+  score?: number;
+  snippet?: string;
+};
 
 type Message = {
   id: string;
   role: "user" | "assistant" | "system";
   text: string;
   loading?: boolean;
+  citations?: Citation[];
 };
 
-export default function ChatWindow({ sessionId }: { sessionId?: string }) {
+export default function ChatWindow({
+  sessionId,
+  onCitationClick,
+}: {
+  sessionId?: string;
+  onCitationClick?: (c: Citation) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -17,7 +32,6 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-  // helper to read selected doc from hash (same pattern as other components)
   function getSelectedDocFromHash() {
     if (typeof window === "undefined") return null;
     const h = (window.location.hash || "").replace("#doc-", "");
@@ -71,12 +85,8 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
       } else {
         const json = await res.json();
         const answer = json.answer || "No answer";
-        pushMessage({ id: `a-${Date.now()}`, role: "assistant", text: answer });
-        if (json.citations && Array.isArray(json.citations)) {
-          json.citations.forEach((c: any, i: number) =>
-            pushMessage({ id: `c-${Date.now()}-${i}`, role: "assistant", text: `— source: ${c}` })
-          );
-        }
+        const citations = Array.isArray(json.citations) ? json.citations : [];
+        pushMessage({ id: `a-${Date.now()}`, role: "assistant", text: answer, citations });
       }
     } catch (err: any) {
       setMessages((cur) => cur.filter((m) => m.id !== placeholder.id));
@@ -145,77 +155,31 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
               <div className="text-slate-400 text-sm">Ask questions about the selected document. Genie will use retrieved context to answer.</div>
             )}
 
-            {messages.map((m) => {
-              const citationMatch = typeof m.text === "string"
-                ? m.text.match(/session:[^:]+:doc:([^#]+)#chunk:([^\s]+)/)
-                : null;
-
-              const isCitation = Boolean(citationMatch);
-
-              if (isCitation) {
-                const [, docId, chunkId] = citationMatch as RegExpMatchArray;
-                const shortDoc = docId.slice(0, 8) + (docId.length > 8 ? "…" : "");
-                const shortChunk = chunkId.slice(0, 8) + (chunkId.length > 8 ? "…" : "");
-
-                const handleOpen = () => {
-                  if (typeof window !== "undefined") {
-                    window.location.hash = `doc-${docId}`;
-                  }
-                };
-
-                const handleCopy = async () => {
-                  try {
-                    if (navigator?.clipboard?.writeText) {
-                      await navigator.clipboard.writeText(m.text as string);
-                      alert("Citation copied to clipboard");
-                    }
-                  } catch (err) {
-                    console.error("Failed to copy citation", err);
-                  }
-                };
-
-                return (
-                  <div
-                    key={m.id}
-                    className="p-3 rounded bg-[#0f1724] text-slate-200 self-start border border-slate-700/60"
-                  >
-                    <div className="text-xs uppercase tracking-wide text-slate-400 mb-1">Citation</div>
-                    <div className="text-sm text-slate-100 mb-2">
-                       source: doc:{shortDoc} #chunk:{shortChunk}
-                    </div>
-                    <div className="flex gap-2 text-xs">
-                      <button
-                        onClick={handleOpen}
-                        className="px-2 py-1 rounded bg-[#0b6b88] text-white hover:bg-[#0d7fa1]"
-                      >
-                        Open document
-                      </button>
-                      <button
-                        onClick={handleCopy}
-                        className="px-2 py-1 rounded border border-slate-600 text-slate-200 hover:bg-slate-800"
-                      >
-                        Copy citation
-                      </button>
-                    </div>
-                    {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={`p-3 rounded ${
+                  m.role === "user"
+                    ? "bg-[#052033] text-slate-200 self-end"
+                    : "bg-[#0f1724] text-slate-200 self-start"
+                }`}
+              >
+                <div className="text-sm whitespace-pre-wrap">{m.text}</div>
+                {m.citations && m.citations.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {m.citations.map((c, i) => (
+                      <CitationChip
+                        key={c.chunkId}
+                        index={i + 1}
+                        citation={c}
+                        onClick={() => {/* wire up from parent via props later if needed */}}
+                      />
+                    ))}
                   </div>
-                );
-              }
-
-              return (
-                <div
-                  key={m.id}
-                  className={`p-3 rounded ${
-                    m.role === "user"
-                      ? "bg-[#052033] text-slate-200 self-end"
-                      : "bg-[#0f1724] text-slate-200 self-start"
-                  }`}
-                >
-                  <div className="text-sm whitespace-pre-wrap">{m.text}</div>
-                  {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
-                </div>
-              );
-            })}
+                )}
+                {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
+              </div>
+            ))}
           </div>
 
           <div className="p-3 border-t border-slate-700">

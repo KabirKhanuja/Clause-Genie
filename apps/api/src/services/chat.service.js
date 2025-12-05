@@ -390,12 +390,19 @@ User asked previously and asked to "please do" (confirm) — provide a complete 
     };
   }
 
-  // 5) build RAG context and citations 
+  // 5) build RAG context and structured citations
   const contexts = (chosenChunks || []).map(r => {
     const snippet = (r.text || '').slice(0, 512);
     return `---\n(source: ${r.docId}#${r.chunkId} score=${(r.score||0).toFixed(3)})\n${snippet}`;
   }).join('\n\n');
-  const citations = Array.from(new Set((chosenChunks || []).map(r => `session:${sessionId}:doc:${r.docId}#chunk:${r.chunkId}`))).filter(Boolean);
+
+  // Build structured citations for frontend UI
+  const citations = (chosenChunks || []).map(r => ({
+    docId: r.docId,
+    chunkId: r.chunkId,
+    score: r.score || 0,
+    snippet: (r.text || '').slice(0, 160)
+  }));
 
   // storing the incoming user message into chat history first
   await storeChatMessage(sessionId, { role: 'user', content: question }).catch(() => {});
