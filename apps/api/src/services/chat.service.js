@@ -7,6 +7,20 @@ const LLM_API_URL = process.env.LLM_API_URL || process.env.GENERATIVE_API_URL ||
 const LLM_API_KEY = process.env.LLM_API_KEY || process.env.GENERATIVE_API_KEY || '';
 const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';
 
+async function fetchDocMeta(sessionId, docId) {
+  const client = await connectRedis();
+  const metaKey = `session:${sessionId}:doc:${docId}:meta`;
+  try {
+    const meta = await client.hGetAll(metaKey).catch(() => ({}));
+    return {
+      title: meta.originalname || meta.title || `doc:${docId}`,
+      preview: (meta.preview && String(meta.preview).slice(0, 300)) || ''
+    };
+  } catch (e) {
+    return { title: `doc:${docId}`, preview: '' };
+  }
+}
+
 const CHAT_HISTORY_KEY = (sessionId) => `session:${sessionId}:chat:messages`;
 
 /**
@@ -190,6 +204,35 @@ export async function answerQuestion({ sessionId, docId: explicitDocId, question
   const client = await connectRedis();
   if (!sessionId || !question) return { answer: 'missing sessionId or question', citations: [] };
 
+  // chit chat
+  const GREET_RE = /^(hi|hello|hey|hiya|yo|good (morning|afternoon|evening))[\!\.\s]*$/i;
+  const THANKS_RE = /^(thanks|thank you|thx)[\!\.\s]*$/i;
+  const BYE_RE = /^(bye|goodbye|see you)[\!\.\s]*$/i;
+  const CONFIRM_RE = /^(yes|yep|sure|please do|please|go ahead|ok|okay|ya|y)$/i;
+
+  if (GREET_RE.test(question) || THANKS_RE.test(question) || BYE_RE.test(question)) {
+    // Friendly short reply it doesn't call vector/LLM
+    const shortReply = GREET_RE.test(question)
+      ? `Hi! I'm Clause-Genie. You can ask me about the selected document or say "summarize" / "what's this doc about?".`
+      : THANKS_RE.test(question)
+        ? `You're welcome! Anything else about the document I can help with?`
+        : `Goodbye — feel free to re-open the chat if you need anything.`;
+
+    // record user message + assistant reply to history (you already have storeChatMessage)
+    await storeChatMessage(sessionId, { role: 'user', content: question }).catch(()=>{});
+    await storeChatMessage(sessionId, { role: 'assistant', content: shortReply }).catch(()=>{});
+
+    return { answer: shortReply, citations: [], pickedDocId: null };
+  }
+  
+  if (CONFIRM_RE.test(question)) {
+    
+    await storeChatMessage(sessionId, { role: 'user', content: question }).catch(()=>{});
+    const follow = `Thanks — please tell me which document or question you'd like me to answer now (or re-send your question).`;
+    await storeChatMessage(sessionId, { role: 'assistant', content: follow }).catch(()=>{});
+    return { answer: follow, citations: [], pickedDocId: null };
+  }
+
   // 1) global vector search 
   let globalResults = [];
   try {
@@ -212,21 +255,22 @@ export async function answerQuestion({ sessionId, docId: explicitDocId, question
     const scoreMap = new Map();
     for (const r of (globalResults || [])) {
       const d = r.docId || 'unknown';
-      const cur = scoreMap.get(d) || { sum: 0, max: -Infinity, count: 0 };
+      const cur = scoreMap.get(d) || { sum: 0, max: -Infinity, count: 0, chunks: [] };
       cur.sum += (r.score || 0);
       cur.count += 1;
       if ((r.score || 0) > cur.max) cur.max = r.score || 0;
+      cur.chunks.push(r);
       scoreMap.set(d, cur);
     }
 
     let best = null;
     for (const [d, stats] of scoreMap.entries()) {
-      if (!best) { best = { docId: d, stats }; continue; }
-      const b = best.stats;
-      if (stats.sum > b.sum || (stats.sum === b.sum && stats.max > b.max)) {
-        best = { docId: d, stats };
+      const weighted = stats.sum * Math.log(1 + stats.count);
+      if (!best || weighted > best.weighted) {
+        best = { docId: d, stats, weighted };
       }
     }
+
     if (best) {
       chosenDocId = best.docId;
       chosenChunks = (globalResults || []).filter(r => r.docId === chosenDocId);
@@ -294,13 +338,16 @@ export async function answerQuestion({ sessionId, docId: explicitDocId, question
 
   // built RAG message that we want the model to see
   const ragSystem = `
-You are Clause-Genie.
+You are Clause-Genie — an assistant for the user's uploaded documents.
 Primary source of truth: the provided document excerpts.
 
-Rules:
-1) If the user's question can be answered fully from the provided context → answer ONLY using the context (quote or cite snippets).
-2) If the context is insufficient → use general knowledge but indicate that the answer is from general knowledge.
-3) Keep answers concise and highlight source citations when applicable.
+Behavior:
+1) FIRST try to answer using ONLY the provided context excerpts. If the answer is fully contained in the context, produce a concise answer and include citations to the exact excerpt(s).
+2) If the context does NOT contain the full answer, you MAY use your general knowledge to complete the answer — but you MUST:
+   - clearly label any content based on general knowledge with the sentence: "[NOTE: the following is from general knowledge and not present in the provided documents.]"
+   - still show any supporting document citations if parts of the answer came from documents.
+3) If the user's question is unrelated to the documents' subject, say: "That question is outside the documents' scope; I can answer from general knowledge if you want." and only answer if user confirms.
+4) Keep answers short and show source citations in the form in the end of the message not after every point (doc:{docId}#chunk:{chunkId}).
 `;
 
   // context + question
@@ -319,7 +366,7 @@ Rules:
   const CHAR_LIMIT = 8000;
   function trimMessagesByChars(msgs, limit) {
     const sys = msgs[0];
-    const tail = msgs.slice(1); // older -> newer
+    const tail = msgs.slice(1); 
     let total = JSON.stringify(sys).length;
     const kept = [];
     for (let i = tail.length - 1; i >= 0; i--) {
