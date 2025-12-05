@@ -89,6 +89,9 @@ verify redis:
 to start docker: 
 ```docker-compose up -d```
 
+for embed_server (go to embed_server cd): 
+```uvicorn app:app --host 0.0.0.0 --port 8000```
+
 
 
 
