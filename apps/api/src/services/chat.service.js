@@ -236,7 +236,9 @@ Primary source of truth: the provided document excerpts.
 Rules:
 1) If the user's question can be answered fully from the provided context → answer ONLY using the context (quote or cite snippets).
 2) If the context is insufficient → use general knowledge but indicate that the answer is from general knowledge.
-3) Keep answers concise and highlight source citations when applicable.
+3) If the question is unrelated to the context → politely only state that "I can only answer questions related to the provided excerpts."
+4) Keep answers concise and highlight source citations when applicable. 
+5) Provide answers to certain heavy questions in bullet points for clarity.
 `;
 
   const userPrompt = `
