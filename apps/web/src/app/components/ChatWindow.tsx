@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import CitationChip from "../chat/CitationChip";
+import GeneralKnowledgeToggle from "../components/GeneralKnowledgeToggle";
 
 type Citation = {
   docId: string;
@@ -21,14 +22,38 @@ type Message = {
 export default function ChatWindow({
   sessionId,
   onCitationClick,
+  useGeneralKnowledge,
+  onToggleGeneralKnowledge,
 }: {
   sessionId?: string;
   onCitationClick?: (c: Citation) => void;
+  useGeneralKnowledge?: boolean;
+  onToggleGeneralKnowledge?: (value: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+
+  // local toggle state, initialize from prop and keep in sync
+  const [localUseGeneral, setLocalUseGeneral] = useState<boolean>(!!useGeneralKnowledge);
+
+  // if parent changes prop, sync local state
+  useEffect(() => {
+    setLocalUseGeneral(!!useGeneralKnowledge);
+  }, [useGeneralKnowledge]);
+
+  // handler when the toggle changes locally
+  function handleToggleLocal(v: boolean) {
+    setLocalUseGeneral(v);
+    if (typeof onToggleGeneralKnowledge === "function") {
+      try {
+        onToggleGeneralKnowledge(v);
+      } catch {
+        // ignore
+      }
+    }
+  }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -70,7 +95,7 @@ export default function ChatWindow({
         sessionId,
         docId: selectedDocId,
         question: userMsg.text,
-        // will include chat history or other flags later
+        useGeneralKnowledge: localUseGeneral,
       };
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
@@ -127,7 +152,13 @@ export default function ChatWindow({
         <div className="h-full flex flex-col">
           <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between gap-3">
             <div>
-              <div className="text-white font-semibold">Clause Genie</div>
+              <div className="flex items-center gap-3">
+                <div className="text-white font-semibold">Clause Genie</div>
+                <GeneralKnowledgeToggle
+                  enabled={localUseGeneral}
+                  onToggle={handleToggleLocal}
+                />
+              </div>
               <div className="text-xs text-slate-400">{sessionId ? `Session: ${sessionId.slice(0, 8)}…` : "No session"}</div>
               <div className="text-xs text-slate-400">{selectedDocId ? `Doc: ${selectedDocId.slice(0, 8)}…` : "No doc selected"}</div>
             </div>

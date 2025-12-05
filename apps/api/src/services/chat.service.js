@@ -7,6 +7,9 @@ const LLM_API_URL = process.env.LLM_API_URL || process.env.GENERATIVE_API_URL ||
 const LLM_API_KEY = process.env.LLM_API_KEY || process.env.GENERATIVE_API_KEY || '';
 const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';
 
+const TOP_SCORE_THRESHOLD = Number(process.env.TOP_SCORE_THRESHOLD || 0.12); 
+const MIN_CHUNKS_FOR_CONTEXT = Number(process.env.MIN_CHUNKS_FOR_CONTEXT || 1);
+
 async function fetchDocMeta(sessionId, docId) {
   const client = await connectRedis();
   const metaKey = `session:${sessionId}:doc:${docId}:meta`;
@@ -221,7 +224,7 @@ async function callLLM(promptOrMessages, systemPrompt = '') {
  * answerQuestion: main RAG + LLM orchestration
  * returns { answer, citations, pickedDocId }
  */
-export async function answerQuestion({ sessionId, docId: explicitDocId, question }) {
+export async function answerQuestion({ sessionId, docId: explicitDocId, question, useGeneralKnowledge = null }) {
   const client = await connectRedis();
   if (!sessionId || !question) return { answer: 'missing sessionId or question', citations: [] };
 
@@ -390,13 +393,41 @@ User asked previously and asked to "please do" (confirm) — provide a complete 
     };
   }
 
-  // 5) build RAG context and structured citations
+  // decide if we have meaningful context based on similarity scores
+  let topScore = 0;
+  if (chosenChunks && chosenChunks.length > 0) {
+    topScore = Math.max(...chosenChunks.map(c => c.score || 0));
+  }
+
+  const haveContext = (chosenChunks && chosenChunks.length >= MIN_CHUNKS_FOR_CONTEXT && topScore >= TOP_SCORE_THRESHOLD);
+
+  // user override for use of general knowledge
+  let userAllowsGeneralKnowledge = null;
+  if (useGeneralKnowledge === true) {
+    logger.info({ sessionId, chosenDocId }, 'User forced general knowledge on for this chat turn');
+    userAllowsGeneralKnowledge = true;
+  } else if (useGeneralKnowledge === false) {
+    logger.info({ sessionId, chosenDocId }, 'User forced general knowledge OFF for this chat turn');
+    userAllowsGeneralKnowledge = false;
+  } else {
+    userAllowsGeneralKnowledge = null; // follow automatic behavior
+  }
+
+  if (!haveContext) {
+    const lastAssistant = await getLastAssistantMessage(sessionId);
+    const lastAskedConfirm = lastAssistant && /outside (the )?documents'? scope|confirm if you'd like me to proceed|confirm if you want me to use general knowledge/i.test(lastAssistant);
+    if (lastAskedConfirm) {
+    } else {
+    }
+  }
+
+  // 5) built RAG context and structured citations
   const contexts = (chosenChunks || []).map(r => {
     const snippet = (r.text || '').slice(0, 512);
     return `---\n(source: ${r.docId}#${r.chunkId} score=${(r.score||0).toFixed(3)})\n${snippet}`;
   }).join('\n\n');
 
-  // Build structured citations for frontend UI
+  // Built structured citations for frontend UI
   const citations = (chosenChunks || []).map(r => ({
     docId: r.docId,
     chunkId: r.chunkId,
@@ -417,23 +448,29 @@ User asked previously and asked to "please do" (confirm) — provide a complete 
   // built RAG message that we want the model to see
   const ragSystem = `
 You are Clause-Genie — an assistant for the user's uploaded documents.
-Primary source of truth: the provided document excerpts.
+Primary source of truth: the provided document excerpts (when available).
 
 Behavior:
-1) FIRST try to answer using ONLY the provided context excerpts. If the answer is fully contained in the context, produce a concise answer and include citations to the exact excerpt(s).
-2) If the context does NOT contain the full answer, you MAY use your general knowledge to complete the answer — but you MUST:
-   - clearly label any content based on general knowledge with the sentence: "[NOTE: the following is from general knowledge and not present in the provided documents.]"
-   - still show any supporting document citations if parts of the answer came from documents.
-3) If the user's question is unrelated to the documents' subject, say: "That question is outside the documents' scope; I can answer from general knowledge if you want." and only answer if user confirms.
-4) Keep answers short and show source citations in the form in the end of the message not after every point (doc:{docId}#chunk:{chunkId}).
+1) Prefer answering using ONLY the provided context excerpts if they fully answer the user's question. Quote or cite excerpts when used.
+2) If the context is partial or insufficient, you MAY use general knowledge to complete the answer — but you MUST prefix any content that is not in the documents with:
+   "[NOTE: the following is from general knowledge and not present in the provided documents.]"
+   Also include document citations for any parts that came from documents.
+3) Do not repeatedly ask the user to confirm general-knowledge use. Only ask for confirmation if you previously explicitly asked the user to confirm.
+4) If the question is clearly unrelated to the documents' subject and not answerable from them, you may answer from general knowledge but label it (see rule 2).
+5) Keep answers concise and show source citations at the end of the response in the form: doc:{docId}#chunk:{chunkId}.
 `;
 
   // context + question
   const ragUser = `Context Excerpts (from documents):\n${contexts}\n\nNow answer the user's latest question using the conversation context below.`;
 
+  let extraSystemNote = '';
+  if (!haveContext) {
+    extraSystemNote = 'CONTEXT_STATUS: no high-confidence excerpts found — you may use general knowledge, but mark it with the prefix [NOTE: the following is from general knowledge ...].';
+  }
+
   // Built full messages array: start with system, then prior convo, then the RAG user message
   const messagesForLLM = [
-    { role: 'system', content: ragSystem },
+    { role: 'system', content: ragSystem + '\n' + extraSystemNote },
     // includes prior conversation 
     ...historyMessages,
 
