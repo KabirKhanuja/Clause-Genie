@@ -67,6 +67,27 @@ export async function getRecentChatMessages(sessionId, maxMessages = 30) {
   }
 }
 
+async function getLastAssistantMessage(sessionId) {
+  try {
+    const client = await connectRedis();
+    const key = CHAT_HISTORY_KEY(sessionId);
+    const len = await client.lLen(key).catch(() => 0);
+    if (!len) return null;
+    const start = Math.max(0, len - 8);
+    const arr = await client.lRange(key, start, -1).catch(() => []);
+    for (let i = arr.length - 1; i >= 0; i--) {
+      try {
+        const o = JSON.parse(arr[i]);
+        if (o && o.role === 'assistant' && o.content) return String(o.content || '');
+      } catch (e) {
+      }
+    }
+  } catch (e) {
+    logger.warn({ err: e, sessionId }, 'getLastAssistantMessage failed');
+  }
+  return null;
+}
+
 async function fetchWithLocalRetry(url, options) {
   try {
     return await fetch(url, options);
@@ -226,11 +247,61 @@ export async function answerQuestion({ sessionId, docId: explicitDocId, question
   }
   
   if (CONFIRM_RE.test(question)) {
-    
     await storeChatMessage(sessionId, { role: 'user', content: question }).catch(()=>{});
-    const follow = `Thanks — please tell me which document or question you'd like me to answer now (or re-send your question).`;
-    await storeChatMessage(sessionId, { role: 'assistant', content: follow }).catch(()=>{});
-    return { answer: follow, citations: [], pickedDocId: null };
+
+    const lastAssistant = await getLastAssistantMessage(sessionId);
+
+    const askedForConfirm = lastAssistant && /outside (the )?documents'? scope|I can answer from general knowledge|confirm if you'd like/i.test(lastAssistant);
+
+    if (!askedForConfirm) {
+      const follow = `Got it — please tell me which document or question you'd like me to answer now (or re-send your question).`;
+      await storeChatMessage(sessionId, { role: 'assistant', content: follow }).catch(()=>{});
+      return { answer: follow, citations: [], pickedDocId: null };
+    }
+
+    const contexts = (chosenChunks || []).map(r => (r.text || '').slice(0, 512)).join('\n\n');
+    const citations = Array.from(new Set((chosenChunks || []).map(r => `session:${sessionId}:doc:${r.docId}#chunk:${r.chunkId}`))).filter(Boolean);
+
+    const systemPromptGeneral = `
+You are Clause-Genie. Use the provided document excerpts as helpful context but you MAY use your general knowledge to answer fully.
+If you use general knowledge, prefix that portion with: "[NOTE: general-knowledge]".
+Keep answers concise and include citations to documents when relevant.
+`;
+
+    const userPromptGeneral = `
+Context excerpts:
+${contexts || '[no relevant excerpts available]'}
+
+User asked previously and asked to "please do" (confirm) — provide a complete answer that can use general knowledge if needed.
+`;
+
+    // Call the LLM with combined history + new user prompt (we reuse your existing history fetch)
+    const MAX_CHAT_MESSAGES = 30;
+    const recent = await getRecentChatMessages(sessionId, MAX_CHAT_MESSAGES);
+    const historyMessages = (recent || []).map(m => ({ role: m.role, content: m.content }));
+
+    const messagesForGeneral = [
+      { role: 'system', content: systemPromptGeneral },
+      ...historyMessages,
+      { role: 'user', content: `${userPromptGeneral}\n\nUser Question (repeat): ${question}` }
+    ];
+
+    let llmReply = null;
+    try {
+      const { text } = await callLLM(messagesForGeneral, systemPromptGeneral);
+      llmReply = (text || '').toString();
+    } catch (e) {
+      logger.warn({ err: e, sessionId }, 'General-knowledge LLM call failed');
+    }
+
+    const assistantReply = llmReply && llmReply.length > 0
+      ? llmReply
+      : "I couldn't produce a general-knowledge answer right now; please try again or ask a narrower question.";
+
+    // store assistant reply
+    await storeChatMessage(sessionId, { role: 'assistant', content: assistantReply }).catch(()=>{});
+
+    return { answer: assistantReply, citations, pickedDocId: chosenDocId || null };
   }
 
   // 1) global vector search 
