@@ -40,75 +40,95 @@ export function chunkText(text, opts = {}) {
   return chunks;
 }
 
-/*
- embedBatch- it calls embedding API for an array of texts
- and returns array of embeddings (Float32Array converted to regular arrays)
- */
+
+//  dual mode embedding caller
 export async function embedBatch(texts = []) {
   if (!Array.isArray(texts) || texts.length === 0) return [];
 
-  if (!EMBEDDING_API_URL || !EMBEDDING_API_KEY) {
-    throw new Error('Embedding API not configured (EMBEDDING_API_URL/EMBEDDING_API_KEY)');
-  }
+  const MODE = (process.env.EMBEDDING_MODE || 'cloud').toLowerCase();
+  const LOCAL_URL = process.env.EMBEDDING_LOCAL_URL || 'http://localhost:8000/embed';
+  const BATCH_SIZE = 16; 
 
-  // basic rate safety that send batches of up to 16 items per request 
-  const BATCH_SIZE = 16;
   const outEmbeds = [];
 
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE);
 
     try {
-      const body = JSON.stringify({
-        model: EMBEDDING_MODEL,
-        input: batch
-      });
+      if (MODE === 'local') {
+        const resp = await fetch(LOCAL_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ inputs: batch })
+        });
 
-      const resp = await fetch(EMBEDDING_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${EMBEDDING_API_KEY}`
-        },
-        body
-      });
-
-      if (!resp.ok) {
-        const txt = await resp.text().catch(() => '');
-        throw new Error(`Embedding API error ${resp.status}: ${txt}`);
-      }
-
-      const j = await resp.json().catch(() => null);
-
-      // provider differences- try common shapes
-      //  - { data: [{ embedding: [...] }, ...] }
-      //  - { embeddings: [...] }
-      //  - { embedding: [...] } for single
-      if (j == null) throw new Error('Empty embedding response');
-
-      if (Array.isArray(j.data) && j.data.length === batch.length) {
-        for (const item of j.data) {
-          if (Array.isArray(item.embedding)) outEmbeds.push(item.embedding.map(Number));
-          else if (Array.isArray(item.embeddings)) outEmbeds.push(item.embeddings.map(Number));
-          else outEmbeds.push([]);
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => '');
+          throw new Error(`Local embedding server error ${resp.status}: ${txt}`);
         }
-      } else if (Array.isArray(j.embeddings) && j.embeddings.length === batch.length) {
-        for (const e of j.embeddings) outEmbeds.push(Array.isArray(e) ? e.map(Number) : []);
-      } else if (Array.isArray(j.embedding) && batch.length === 1) {
-        outEmbeds.push(j.embedding.map(Number));
-      } else if (Array.isArray(j) && j.length === batch.length) {
-        for (const item of j) {
-          if (Array.isArray(item.embedding)) outEmbeds.push(item.embedding.map(Number));
-          else if (Array.isArray(item)) outEmbeds.push(item.map(Number));
-          else outEmbeds.push([]);
+
+        const j = await resp.json().catch(() => null);
+        if (!j || !Array.isArray(j.embeddings) || j.embeddings.length !== batch.length) {
+          throw new Error('Local embedding server returned unexpected shape');
+        }
+        for (const e of j.embeddings) {
+          outEmbeds.push(Array.isArray(e) ? e.map(Number) : []);
         }
       } else {
-        logger.warn({ resp: j }, 'embedBatch: unexpected embedding API response shape');
-        for (let k = 0; k < batch.length; k++) outEmbeds.push([]);
+        // cloud mode 
+        if (!EMBEDDING_API_URL || !EMBEDDING_API_KEY) {
+          throw new Error('Embedding API not configured (EMBEDDING_API_URL/EMBEDDING_API_KEY)');
+        }
+
+        const body = JSON.stringify({
+          model: EMBEDDING_MODEL,
+          input: batch
+        });
+
+        const resp = await fetch(EMBEDDING_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${EMBEDDING_API_KEY}`
+          },
+          body
+        });
+
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => '');
+          throw new Error(`Embedding API error ${resp.status}: ${txt}`);
+        }
+
+        const j = await resp.json().catch(() => null);
+
+        if (j == null) throw new Error('Empty embedding response');
+
+        if (Array.isArray(j.data) && j.data.length === batch.length) {
+          for (const item of j.data) {
+            if (Array.isArray(item.embedding)) outEmbeds.push(item.embedding.map(Number));
+            else if (Array.isArray(item.embeddings)) outEmbeds.push(item.embeddings.map(Number));
+            else outEmbeds.push([]);
+          }
+        } else if (Array.isArray(j.embeddings) && j.embeddings.length === batch.length) {
+          for (const e of j.embeddings) outEmbeds.push(Array.isArray(e) ? e.map(Number) : []);
+        } else if (Array.isArray(j.embedding) && batch.length === 1) {
+          outEmbeds.push(j.embedding.map(Number));
+        } else if (Array.isArray(j) && j.length === batch.length) {
+          for (const item of j) {
+            if (Array.isArray(item.embedding)) outEmbeds.push(item.embedding.map(Number));
+            else if (Array.isArray(item)) outEmbeds.push(item.map(Number));
+            else outEmbeds.push([]);
+          }
+        } else {
+          logger.warn({ resp: j }, 'embedBatch: unexpected embedding API response shape');
+          for (let k = 0; k < batch.length; k++) outEmbeds.push([]);
+        }
       }
     } catch (err) {
       logger.error({ err }, 'embedBatch failed');
-      for (let k = 0; k < Math.min(BATCH_SIZE, texts.length - i); k++) outEmbeds.push([]);
+      for (let k = 0; k < batch.length; k++) outEmbeds.push([]);
     }
   }
 

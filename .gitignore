@@ -55,3 +55,4 @@ docker/redis-data/*
 .venv/
 venv/
 embed_server/.venv/
+embed_server/__pycache__/
