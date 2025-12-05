@@ -17,7 +17,7 @@ pip install -r requirements.txt
 Start the embed server with uvicorn:
 
 ```bash
-uvicorn app:app --host 0.0.0.0 --port 8000 --workers 1
+uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
 The server will be available at `http://localhost:8000`.
