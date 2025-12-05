@@ -51,3 +51,8 @@ appendonly.aof.*
 dump.rdb
 docker/redis-data/*
 
+# virtual environment
+.venv/
+venv/
+embed_server/.venv/
+embed_server/__pycache__/
