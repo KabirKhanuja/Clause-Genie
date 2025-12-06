@@ -111,7 +111,7 @@ async function fetchWithLocalRetry(url, options) {
  - string (single prompt)
  - array of {role, content} (chat messages)
  */
-async function callLLM(promptOrMessages, systemPrompt = '') {
+export async function callLLM(promptOrMessages, systemPrompt = '') {
   if (!LLM_API_URL) throw new Error('LLM API URL not configured');
 
   const isMessages = Array.isArray(promptOrMessages);

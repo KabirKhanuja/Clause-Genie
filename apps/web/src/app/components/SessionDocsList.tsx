@@ -10,6 +10,7 @@ type Doc = {
   status?: string;
   parsedAt?: string;
   preview?: string;
+  summary?: string;
 };
 
 export default function SessionDocsList({ sessionId }: { sessionId?: string }) {
@@ -73,7 +74,14 @@ export default function SessionDocsList({ sessionId }: { sessionId?: string }) {
           <div className="flex justify-between items-start gap-3">
             <div className="min-w-0">
               <div className="text-white text-sm font-medium truncate">{d.originalname || d.docId}</div>
-              <div className="text-slate-400 text-xs truncate">{d.preview ? `${d.preview.slice(0, 120)}${d.preview.length > 120 ? '…' : ''}` : (d.mimetype || '')}</div>
+              {d.summary && (
+                <div className="text-slate-300 text-xs mb-1 line-clamp-2">
+                  {d.summary}
+                </div>
+              )}
+              <div className="text-slate-400 text-xs truncate">
+                {d.preview ? `${d.preview.slice(0, 120)}${d.preview.length > 120 ? '…' : ''}` : (d.mimetype || '')}
+              </div>
             </div>
             <div className="text-right text-xs">
               <div className="text-slate-300">{d.status || 'uploaded'}</div>

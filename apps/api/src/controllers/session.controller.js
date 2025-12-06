@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import config from '../config/index.js';
+import { callLLM } from '../services/chat.service.js';
 
 /**
  * GET /api/session/:sessionId
@@ -28,6 +29,7 @@ const getSession = async (req, res, next) => {
         const textKey = `session:${sessionId}:doc:${docId}:text`;
         let text = await client.get(textKey).catch(() => null);
         let preview = '';
+        const summary = meta.summary || '';
         if (text) {
           preview = text.slice(0, 300);
         } else if (meta.preview) {
@@ -42,7 +44,8 @@ const getSession = async (req, res, next) => {
           path: meta.path || '',
           status: meta.status || 'uploaded',
           parsedAt: meta.parsedAt || '',
-          preview
+          preview,
+          summary
         };
       })
     );
@@ -88,6 +91,56 @@ const getDoc = async (req, res, next) => {
     });
   } catch (err) {
     logger.error({ err, sessionId: req.params?.sessionId, docId: req.params?.docId }, 'Failed to read document');
+    next(err);
+  }
+};
+
+/**
+ * POST /api/session/:sessionId/doc/:docId/summary
+ * Generates or regenerates an LLM summary from already parsed text.
+ */
+const generateDocSummary = async (req, res, next) => {
+  try {
+    const { sessionId, docId } = req.params;
+    if (!sessionId || !docId) return res.status(400).json({ error: 'missing sessionId or docId' });
+
+    const client = await connectRedis();
+
+    const textKey = `session:${sessionId}:doc:${docId}:text`;
+    const metaKey = `session:${sessionId}:doc:${docId}:meta`;
+
+    const [text, meta] = await Promise.all([
+      client.get(textKey).catch(() => null),
+      client.hGetAll(metaKey).catch(() => ({}))
+    ]);
+
+    if (!text) {
+      return res.status(400).json({ error: 'no parsed text available for this document' });
+    }
+
+    const snippet = text.slice(0, 8000);
+    const preview = snippet.slice(0, 300);
+
+    let summary = '';
+    try {
+      const prompt = `Summarize the following document in 3-4 concise sentences focusing on its main purpose and key topics.\n\n---\n${snippet}`;
+      const { text: llmSummary } = await callLLM(prompt, 'You are Clause-Genie summarizing a legal or policy document for a lawyer.');
+      summary = (llmSummary || '').trim();
+    } catch (e) {
+      const sentences = snippet.split(/(?<=[\.\!\?])\s+/).slice(0, 2).join(' ');
+      summary = sentences || preview;
+      logger.warn({ err: e, sessionId, docId }, 'LLM summary failed in generateDocSummary, falling back to extractive');
+    }
+
+    await client.hSet(metaKey, { summary });
+
+    return res.json({
+      docId,
+      sessionId,
+      summary,
+    });
+  } catch (err) {
+    logger.error({ err, sessionId: req.params?.sessionId, docId: req.params?.docId }, 'Failed to generate document summary');
     next(err);
   }
 };
@@ -152,4 +205,4 @@ const getDocFile = async (req, res, next) => {
   }
 };
 
-export default { getSession, getDoc, getDocFile };
+export default { getSession, getDoc, getDocFile, generateDocSummary };

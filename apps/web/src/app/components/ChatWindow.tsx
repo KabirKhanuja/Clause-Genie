@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import CitationChip from "../chat/CitationChip";
 import GeneralKnowledgeToggle from "../components/GeneralKnowledgeToggle";
 import { scrollToChunk } from "../components/DocumentViewer";
@@ -35,6 +35,7 @@ export default function ChatWindow({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // local toggle state, initialize from prop and keep in sync
   const [localUseGeneral, setLocalUseGeneral] = useState<boolean>(!!useGeneralKnowledge);
@@ -75,6 +76,17 @@ export default function ChatWindow({
   }, []);
 
   const pushMessage = (m: Message) => setMessages((s) => [...s, m]);
+
+  // auto-scroll chat to the latest message whenever messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      } catch {
+        // ignore scroll errors
+      }
+    }
+  }, [messages]);
 
   // Normalize a backend citation entry. backend might return:
   // - an object { docId, chunkId, snippet, score }
@@ -288,6 +300,8 @@ export default function ChatWindow({
                 {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
               </div>
             ))}
+
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="p-3 border-t border-slate-700">
