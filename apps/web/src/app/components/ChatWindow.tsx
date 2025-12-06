@@ -20,6 +20,12 @@ type Message = {
   citations?: Citation[];
 };
 
+type Doc = {
+  docId: string;
+  originalname: string;
+  status?: string;
+};
+
 export default function ChatWindow({
   sessionId,
   onCitationClick,
@@ -39,6 +45,7 @@ export default function ChatWindow({
   const [exportOpen, setExportOpen] = useState(false);
   const [chatWidth, setChatWidth] = useState(420);
   const [isResizing, setIsResizing] = useState(false);
+  const [docs, setDocs] = useState<Doc[]>([]);
 
   // local toggle state, initialize from prop and keep in sync
   const [localUseGeneral, setLocalUseGeneral] = useState<boolean>(!!useGeneralKnowledge);
@@ -77,6 +84,35 @@ export default function ChatWindow({
     window.addEventListener("hashchange", readHash);
     return () => window.removeEventListener("hashchange", readHash);
   }, []);
+
+  // fetch documents list when chat opens
+  useEffect(() => {
+    if (!sessionId || !open) return;
+    let cancelled = false;
+    
+    fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Failed to fetch session`);
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled) return;
+        setDocs(json?.docs || []);
+      })
+      .catch(() => {
+        if (!cancelled) setDocs([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, open, API_BASE]);
+
+  function switchToDoc(docId: string) {
+    if (typeof window !== "undefined") {
+      window.location.hash = `doc-${docId}`;
+    }
+  }
 
   const pushMessage = (m: Message) => setMessages((s) => [...s, m]);
 
@@ -347,6 +383,33 @@ export default function ChatWindow({
               </button>
             </div>
           </div>
+
+          {/* document navigation tabs */}
+          {docs.length > 0 && (
+            <div className="px-3 py-2 border-b border-slate-700/50 bg-[#0a1628] overflow-x-auto">
+              <div className="flex gap-1.5 min-w-max">
+                {docs.map((doc, idx) => {
+                  const isActive = doc.docId === selectedDocId;
+                  return (
+                    <button
+                      key={doc.docId}
+                      onClick={() => switchToDoc(doc.docId)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                        isActive
+                          ? "bg-linear-to-r from-[#0ea5e9] to-[#06b6d4] text-white shadow-md"
+                          : "bg-[#081226] text-slate-400 hover:bg-[#0f1729] hover:text-slate-200 border border-slate-700/50"
+                      }`}
+                      title={doc.originalname}
+                    >
+                      <span className="font-semibold">{idx + 1}</span>
+                      <span className="mx-1">·</span>
+                      <span className="max-w-[120px] truncate inline-block align-bottom">{doc.originalname}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="flex-1 overflow-auto px-4 py-5 space-y-4 bg-[#020617]">
             {messages.length === 0 && (
