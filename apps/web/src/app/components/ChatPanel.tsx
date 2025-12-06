@@ -1,27 +1,49 @@
-'use client';
-import { useState } from 'react';
+"use client";
+import { useState } from "react";
+import { scrollToChunk } from "../components/DocumentViewer";
+import GeneralKnowledgeToggle from "../components/GeneralKnowledgeToggle";
 
-type Message = { role: 'user' | 'genie', text: string };
+type Message = { role: "user" | "genie"; text: string };
 
 export default function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'genie', text: 'Hi — upload a document and ask me anything about clauses, coverage, or policies.' }
+    { role: "genie", text: "Hi — upload a document and ask me anything about clauses, coverage, or policies." }
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
+  const [useGeneralKnowledge, setUseGeneralKnowledge] = useState(true);
+
+  function openDocument(docId: string) {
+    if (typeof window !== "undefined") {
+      window.location.hash = `doc-${docId}`;
+    }
+  }
+
+  function handleCitationClick(c: { docId: string; chunkId: string; snippet?: string }) {
+    openDocument(c.docId);
+    setTimeout(() => {
+      if (c.snippet) {
+        scrollToChunk(c.chunkId, c.snippet);
+      }
+    }, 300);
+  }
 
   async function send() {
     if (!input.trim()) return;
-    const userMsg: Message = { role: 'user', text: input.trim() };
+    const userMsg: Message = { role: "user", text: input.trim() };
     setMessages((m) => [...m, userMsg]);
-    setInput('');
-    // mock genie response (later replace with API call)
+    setInput("");
     setTimeout(() => {
-      setMessages((m) => [...m, { role: 'genie', text: `Mock response to: "${userMsg.text}"` }]);
+      setMessages((m) => [...m, { role: "genie", text: `Mock response to: "${userMsg.text}"` }]);
     }, 700);
   }
 
   return (
     <div className="p-6 rounded-2xl bg-[#081226]/50 border border-slate-700">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm text-slate-300 font-semibold">Clause Genie</div>
+        <GeneralKnowledgeToggle enabled={useGeneralKnowledge} onToggle={setUseGeneralKnowledge} />
+      </div>
+
       <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto mb-4">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>

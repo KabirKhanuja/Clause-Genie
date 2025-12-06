@@ -41,6 +41,12 @@ router.get('/session/:sessionId/doc/:docId', sessionController.getDoc);
 // single doc file: stream original upload (if available)
 router.get('/session/:sessionId/doc/:docId/file', sessionController.getDocFile);
 
+// export full session data (docs + chat) as JSON
+router.get('/session/:sessionId/export/json', sessionController.exportSessionJson);
+
+// generate or refresh summary from already parsed text (no re-parsing PDFs)
+router.post('/session/:sessionId/doc/:docId/summary', sessionController.generateDocSummary);
+
 // this is my upload endpoint: accepts multiple files, returns docIds for session
 router.post('/upload', upload.array('files', 8), uploadController.handleUpload);
 

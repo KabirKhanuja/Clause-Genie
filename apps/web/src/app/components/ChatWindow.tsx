@@ -1,23 +1,67 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import CitationChip from "../chat/CitationChip";
+import GeneralKnowledgeToggle from "../components/GeneralKnowledgeToggle";
+import { scrollToChunk } from "../components/DocumentViewer";
+
+type Citation = {
+  docId: string;
+  chunkId: string;
+  score?: number;
+  snippet?: string;
+};
 
 type Message = {
   id: string;
   role: "user" | "assistant" | "system";
   text: string;
   loading?: boolean;
+  citations?: Citation[];
 };
 
-export default function ChatWindow({ sessionId }: { sessionId?: string }) {
+export default function ChatWindow({
+  sessionId,
+  onCitationClick,
+  useGeneralKnowledge,
+  onToggleGeneralKnowledge,
+}: {
+  sessionId?: string;
+  onCitationClick?: (c: Citation) => void;
+  useGeneralKnowledge?: boolean;
+  onToggleGeneralKnowledge?: (value: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [chatWidth, setChatWidth] = useState(420);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // local toggle state, initialize from prop and keep in sync
+  const [localUseGeneral, setLocalUseGeneral] = useState<boolean>(!!useGeneralKnowledge);
+
+  // if parent changes prop, sync local state
+  useEffect(() => {
+    setLocalUseGeneral(!!useGeneralKnowledge);
+  }, [useGeneralKnowledge]);
+
+  // handler when the toggle changes locally
+  function handleToggleLocal(v: boolean) {
+    setLocalUseGeneral(v);
+    if (typeof onToggleGeneralKnowledge === "function") {
+      try {
+        onToggleGeneralKnowledge(v);
+      } catch {
+        // ignore
+      }
+    }
+  }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
-  // helper to read selected doc from hash (same pattern as other components)
   function getSelectedDocFromHash() {
     if (typeof window === "undefined") return null;
     const h = (window.location.hash || "").replace("#doc-", "");
@@ -35,6 +79,95 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
   }, []);
 
   const pushMessage = (m: Message) => setMessages((s) => [...s, m]);
+
+  // auto-scroll chat to the latest message whenever messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      } catch {
+        // ignore scroll errors
+      }
+    }
+  }, [messages]);
+
+  // handle resizing
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      setChatWidth(Math.max(320, Math.min(newWidth, window.innerWidth * 0.9)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
+
+  // Normalize a backend citation entry. backend might return:
+  // - an object { docId, chunkId, snippet, score }
+  // - a string like "session:...:doc:<docId>#chunk:<chunkId>"
+  function normalizeCitation(raw: any): Citation | null {
+    if (!raw) return null;
+    if (typeof raw === "string") {
+      // try parse docId and chunkId
+      const m = raw.match(/doc:([^#\s]+).*#chunk:([^\s]+)/);
+      if (m) {
+        return { docId: m[1], chunkId: m[2], snippet: "" };
+      }
+      return null;
+    }
+    // if already an object, pick fields
+    const docId = raw.docId || raw.document || (raw.source && raw.source.docId) || null;
+    const chunkId = raw.chunkId || raw.chunk || (raw.source && raw.source.chunkId) || null;
+    const snippet = raw.snippet || raw.text || raw.snippet_text || "";
+    if (!docId || !chunkId) return null;
+    return { docId, chunkId, score: raw.score, snippet };
+  }
+
+  // fallback local citation click handler (if parent doesn't pass onCitationClick)
+  async function handleCitationClickLocal(c: Citation) {
+    try {
+      if (!c || !c.docId) return;
+      // set hash to open doc viewer (DocumentViewer listens for hash changes)
+      if (typeof window !== "undefined") {
+        window.location.hash = `doc-${c.docId}`;
+      }
+
+      // Retry scroll until doc-viewer is present and snippet search succeeds (max attempts)
+      const maxAttempts = 8;
+      const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          // If snippet present, attempt highlight
+          if (c.snippet && c.snippet.length > 8) {
+            const ok = scrollToChunk(c.chunkId, c.snippet);
+            if (ok) return;
+          } else {
+            // fallback: try scrollToChunk with chunkId and empty snippet (function handles fallback)
+            const ok = scrollToChunk(c.chunkId, c.snippet || "");
+            if (ok) return;
+          }
+        } catch (e) {
+          // ignore and retry
+        }
+        // wait longer after each try
+        await wait(200 + attempt * 150);
+      }
+      // last resort: just ensure doc opened (hash set above)
+    } catch (e) {
+      // no-op
+    }
+  }
 
   async function handleSend() {
     if (!input.trim()) return;
@@ -56,7 +189,7 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
         sessionId,
         docId: selectedDocId,
         question: userMsg.text,
-        // will include chat history or other flags later
+        useGeneralKnowledge: localUseGeneral,
       };
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
@@ -71,18 +204,46 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
       } else {
         const json = await res.json();
         const answer = json.answer || "No answer";
-        pushMessage({ id: `a-${Date.now()}`, role: "assistant", text: answer });
-        if (json.citations && Array.isArray(json.citations)) {
-          json.citations.forEach((c: any, i: number) =>
-            pushMessage({ id: `c-${Date.now()}-${i}`, role: "assistant", text: `— source: ${c}` })
-          );
+
+        // normalize & dedupe citations
+        const rawCits = Array.isArray(json.citations) ? json.citations : [];
+        const normalized: Citation[] = [];
+        const seen = new Set<string>();
+        for (const r of rawCits) {
+          const n = normalizeCitation(r);
+          if (!n) continue;
+          const key = `${n.docId}#${n.chunkId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          normalized.push(n);
         }
+
+        pushMessage({ id: `a-${Date.now()}`, role: "assistant", text: answer, citations: normalized });
       }
     } catch (err: any) {
       setMessages((cur) => cur.filter((m) => m.id !== placeholder.id));
       pushMessage({ id: `a-err-${Date.now()}`, role: "assistant", text: `Network error: ${err?.message || err}` });
     } finally {
       setSending(false);
+    }
+  }
+
+  async function downloadExportJson() {
+    if (!sessionId || !API_BASE) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}/export/json`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `clause-genie-session-${sessionId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      // silent fail for now
     }
   }
 
@@ -111,28 +272,75 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
 
       {/* sliding panel */}
       <div
-        className={`fixed top-0 right-0 h-full z-50 transform transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
-        style={{ width: 420, maxWidth: "100vw", background: "linear-gradient(180deg,#071126,#020617)", boxShadow: "-20px 0 80px rgba(0,0,0,0.6)", borderLeft: "1px solid rgba(255,255,255,0.03)" }}
+        className={`fixed top-0 right-0 h-full z-50 transform ${open ? "translate-x-0" : "translate-x-full"}`}
+        style={{ 
+          width: chatWidth, 
+          maxWidth: "100vw", 
+          background: "#1a2942", 
+          boxShadow: "-30px 0 100px rgba(0,0,0,0.8), -10px 0 40px rgba(0,0,0,0.5)", 
+          borderLeft: "1px solid rgba(255,255,255,0.1)",
+          transition: isResizing ? 'none' : 'transform 0.3s ease'
+        }}
       >
+        {/* resize handle */}
+        <div
+          onMouseDown={() => setIsResizing(true)}
+          className="absolute left-0 top-0 w-1 h-full cursor-ew-resize hover:bg-cyan-500/50 transition-colors"
+          style={{ marginLeft: '-2px' }}
+        />
         <div className="h-full flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-white font-semibold">Clause Genie</div>
-              <div className="text-xs text-slate-400">{sessionId ? `Session: ${sessionId.slice(0, 8)}…` : "No session"}</div>
-              <div className="text-xs text-slate-400">{selectedDocId ? `Doc: ${selectedDocId.slice(0, 8)}…` : "No doc selected"}</div>
+          <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between gap-3 bg-[#020817]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#22d3ee] to-[#0ea5e9] flex items-center justify-center shadow-lg overflow-hidden">
+                <img src="/images/genie.svg" alt="Genie" className="w-7 h-7" />
+              </div>
+              <div className="text-white font-semibold text-sm">Clause Genie</div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 relative">
+              <GeneralKnowledgeToggle
+                enabled={localUseGeneral}
+                onToggle={handleToggleLocal}
+                size="sm"
+              />
+              {sessionId && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setExportOpen((v) => !v)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                    aria-label="Export session"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </button>
+                  {exportOpen && (
+                    <div className="absolute right-0 mt-2 w-40 rounded-xl bg-[#020617] border border-slate-700 shadow-xl text-xs text-slate-100 z-50">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportOpen(false);
+                          downloadExportJson();
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-800 rounded-xl"
+                      >
+                        JSON (session data)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 onClick={() => {
                   setMessages([]);
                 }}
-                className="text-sm text-slate-400 hover:text-slate-200"
+                className="text-sm text-slate-400 hover:text-slate-200 transition"
               >
                 Clear
               </button>
               <button
                 onClick={() => setOpen(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white transition"
                 aria-label="Close chat panel"
               >
                 ✕
@@ -140,96 +348,81 @@ export default function ChatWindow({ sessionId }: { sessionId?: string }) {
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-4 space-y-3">
+          <div className="flex-1 overflow-auto px-4 py-5 space-y-4 bg-[#020617]">
             {messages.length === 0 && (
-              <div className="text-slate-400 text-sm">Ask questions about the selected document. Genie will use retrieved context to answer.</div>
+              <div className="text-center px-4 py-8">
+                <div className="text-slate-400 text-sm mb-2">
+                  Ask me anything about your documents
+                </div>
+                <div className="text-slate-500 text-xs">
+                  I'll retrieve relevant clauses and cite them for you.
+                </div>
+              </div>
             )}
 
-            {messages.map((m) => {
-              const citationMatch = typeof m.text === "string"
-                ? m.text.match(/session:[^:]+:doc:([^#]+)#chunk:([^\s]+)/)
-                : null;
-
-              const isCitation = Boolean(citationMatch);
-
-              if (isCitation) {
-                const [, docId, chunkId] = citationMatch as RegExpMatchArray;
-                const shortDoc = docId.slice(0, 8) + (docId.length > 8 ? "…" : "");
-                const shortChunk = chunkId.slice(0, 8) + (chunkId.length > 8 ? "…" : "");
-
-                const handleOpen = () => {
-                  if (typeof window !== "undefined") {
-                    window.location.hash = `doc-${docId}`;
-                  }
-                };
-
-                const handleCopy = async () => {
-                  try {
-                    if (navigator?.clipboard?.writeText) {
-                      await navigator.clipboard.writeText(m.text as string);
-                      alert("Citation copied to clipboard");
-                    }
-                  } catch (err) {
-                    console.error("Failed to copy citation", err);
-                  }
-                };
-
-                return (
-                  <div
-                    key={m.id}
-                    className="p-3 rounded bg-[#0f1724] text-slate-200 self-start border border-slate-700/60"
-                  >
-                    <div className="text-xs uppercase tracking-wide text-slate-400 mb-1">Citation</div>
-                    <div className="text-sm text-slate-100 mb-2">
-                       source: doc:{shortDoc} #chunk:{shortChunk}
-                    </div>
-                    <div className="flex gap-2 text-xs">
-                      <button
-                        onClick={handleOpen}
-                        className="px-2 py-1 rounded bg-[#0b6b88] text-white hover:bg-[#0d7fa1]"
-                      >
-                        Open document
-                      </button>
-                      <button
-                        onClick={handleCopy}
-                        className="px-2 py-1 rounded border border-slate-600 text-slate-200 hover:bg-slate-800"
-                      >
-                        Copy citation
-                      </button>
-                    </div>
-                    {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
-                  </div>
-                );
-              }
-
-              return (
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+              >
                 <div
-                  key={m.id}
-                  className={`p-3 rounded ${
+                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl shadow-sm text-[15px] leading-relaxed ${
                     m.role === "user"
-                      ? "bg-[#052033] text-slate-200 self-end"
-                      : "bg-[#0f1724] text-slate-200 self-start"
+                      ? "bg-linear-to-br from-[#0ea5e9] to-[#06b6d4] text-white rounded-br-md"
+                      : "bg-[#0f1729] border border-slate-700/60 text-slate-100 rounded-bl-md"
                   }`}
                 >
-                  <div className="text-sm whitespace-pre-wrap">{m.text}</div>
-                  {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
+                  <div className="whitespace-pre-wrap">{m.text}</div>
+                  {m.citations && m.citations.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {m.citations.map((c, i) => (
+                        <CitationChip
+                          key={`${c.docId}#${c.chunkId}`}
+                          index={i + 1}
+                          citation={c}
+                          onClick={(cit) => {
+                            // prefer parent handler if provided
+                            if (typeof onCitationClick === "function") {
+                              onCitationClick(cit);
+                            } else {
+                              handleCitationClickLocal(cit);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {m.loading && <div className="text-xs text-slate-400 mt-1.5">Thinking…</div>}
                 </div>
-              );
-            })}
+              </div>
+            ))}
+
+            <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-3 border-t border-slate-700">
-            <div className="flex gap-2">
+          <div className="px-4 py-3 border-t border-slate-700/50 bg-[#020817]">
+            <div className="flex gap-2.5 items-center">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder={sessionId ? (selectedDocId ? "Ask about the selected document…" : "Select a document to ask about it…") : "Upload a document first"}
-                className="flex-1 px-3 py-2 bg-[#071026] text-slate-200 rounded border border-slate-700"
+                placeholder="Type your question…"
+                className="flex-1 px-4 py-2.5 bg-[#0a1628] text-slate-200 rounded-full border border-slate-700/60 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 text-sm placeholder:text-slate-500"
                 disabled={!sessionId || sending}
               />
-              <button onClick={handleSend} disabled={!input.trim() || sending || !sessionId} className="px-3 py-2 rounded bg-[#0b6b88] text-white">
-                {sending ? "Sending…" : "Send"}
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || sending || !sessionId}
+                className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center bg-linear-to-br from-[#0ea5e9] to-[#06b6d4] text-white shadow-lg disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-xl transition"
+                aria-label="Send message"
+              >
+                {sending ? (
+                  <span className="text-xs">…</span>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

@@ -7,6 +7,90 @@ const LLM_API_URL = process.env.LLM_API_URL || process.env.GENERATIVE_API_URL ||
 const LLM_API_KEY = process.env.LLM_API_KEY || process.env.GENERATIVE_API_KEY || '';
 const LLM_MODEL = process.env.LLM_MODEL || 'gpt-4o-mini';
 
+const TOP_SCORE_THRESHOLD = Number(process.env.TOP_SCORE_THRESHOLD || 0.12); 
+const MIN_CHUNKS_FOR_CONTEXT = Number(process.env.MIN_CHUNKS_FOR_CONTEXT || 1);
+
+async function fetchDocMeta(sessionId, docId) {
+  const client = await connectRedis();
+  const metaKey = `session:${sessionId}:doc:${docId}:meta`;
+  try {
+    const meta = await client.hGetAll(metaKey).catch(() => ({}));
+    return {
+      title: meta.originalname || meta.title || `doc:${docId}`,
+      preview: (meta.preview && String(meta.preview).slice(0, 300)) || ''
+    };
+  } catch (e) {
+    return { title: `doc:${docId}`, preview: '' };
+  }
+}
+
+const CHAT_HISTORY_KEY = (sessionId) => `session:${sessionId}:chat:messages`;
+
+/**
+ * storeChatMessage(sessionId, { role: 'user'|'assistant'|'system', content })
+ * keeps the list trimmed to maxMessages
+ */
+export async function storeChatMessage(sessionId, messageObj, opts = { maxMessages: 30 }) {
+  if (!sessionId || !messageObj || !messageObj.role || !messageObj.content) return false;
+  const client = await connectRedis();
+  const key = CHAT_HISTORY_KEY(sessionId);
+  const toStore = JSON.stringify({
+    role: messageObj.role,
+    content: String(messageObj.content),
+    ts: new Date().toISOString()
+  });
+  await client.rPush(key, toStore).catch(() => {});
+  if (opts.maxMessages && Number.isInteger(opts.maxMessages)) {
+    await client.lTrim(key, -opts.maxMessages, -1).catch(() => {});
+  }
+  return true;
+}
+
+/**
+ * getRecentChatMessages(sessionId, maxMessages = 30)
+ * returns array of {role, content, ts} in chronological order (oldest -> newest)
+ */
+export async function getRecentChatMessages(sessionId, maxMessages = 30) {
+  const client = await connectRedis();
+  const key = CHAT_HISTORY_KEY(sessionId);
+  try {
+    const len = await client.lLen(key).catch(() => 0);
+    const start = Math.max(0, len - maxMessages);
+    const arr = await client.lRange(key, start, -1).catch(() => []);
+    return arr.map((s) => {
+      try {
+        return JSON.parse(s);
+      } catch (e) {
+        return { role: 'user', content: String(s) };
+      }
+    });
+  } catch (err) {
+    logger.warn({ err, sessionId }, 'getRecentChatMessages failed');
+    return [];
+  }
+}
+
+async function getLastAssistantMessage(sessionId) {
+  try {
+    const client = await connectRedis();
+    const key = CHAT_HISTORY_KEY(sessionId);
+    const len = await client.lLen(key).catch(() => 0);
+    if (!len) return null;
+    const start = Math.max(0, len - 8);
+    const arr = await client.lRange(key, start, -1).catch(() => []);
+    for (let i = arr.length - 1; i >= 0; i--) {
+      try {
+        const o = JSON.parse(arr[i]);
+        if (o && o.role === 'assistant' && o.content) return String(o.content || '');
+      } catch (e) {
+      }
+    }
+  } catch (e) {
+    logger.warn({ err: e, sessionId }, 'getLastAssistantMessage failed');
+  }
+  return null;
+}
+
 async function fetchWithLocalRetry(url, options) {
   try {
     return await fetch(url, options);
@@ -27,7 +111,7 @@ async function fetchWithLocalRetry(url, options) {
  - string (single prompt)
  - array of {role, content} (chat messages)
  */
-async function callLLM(promptOrMessages, systemPrompt = '') {
+export async function callLLM(promptOrMessages, systemPrompt = '') {
   if (!LLM_API_URL) throw new Error('LLM API URL not configured');
 
   const isMessages = Array.isArray(promptOrMessages);
@@ -45,7 +129,12 @@ async function callLLM(promptOrMessages, systemPrompt = '') {
       promptStr = `SYSTEM:\n${systemPrompt}\n\n${promptStr}`;
     }
 
-    const body = { model: LLM_MODEL, prompt: promptStr };
+    const body = {
+      model: LLM_MODEL,
+      prompt: promptStr,
+      max_length: 192, 
+      temperature: 0.0
+    };
 
     const resp = await fetchWithLocalRetry(LLM_API_URL, {
       method: 'POST',
@@ -135,14 +224,95 @@ async function callLLM(promptOrMessages, systemPrompt = '') {
  * answerQuestion: main RAG + LLM orchestration
  * returns { answer, citations, pickedDocId }
  */
-export async function answerQuestion({ sessionId, docId: explicitDocId, question }) {
+export async function answerQuestion({ sessionId, docId: explicitDocId, question, useGeneralKnowledge = true }) {
   const client = await connectRedis();
   if (!sessionId || !question) return { answer: 'missing sessionId or question', citations: [] };
 
-  // 1) global vector search
+  logger.info({ sessionId, chosenDocId: explicitDocId, useGeneralKnowledge }, 'User-specified RAG general-knowledge flag');
+
+  // chit chat
+  const GREET_RE = /^(hi|hello|hey|hiya|yo|good (morning|afternoon|evening))[\!\.\s]*$/i;
+  const THANKS_RE = /^(thanks|thank you|thx)[\!\.\s]*$/i;
+  const BYE_RE = /^(bye|goodbye|see you)[\!\.\s]*$/i;
+  const CONFIRM_RE = /^(yes|yep|sure|please do|please|go ahead|ok|okay|ya|y)$/i;
+
+  if (GREET_RE.test(question) || THANKS_RE.test(question) || BYE_RE.test(question)) {
+    // Friendly short reply it doesn't call vector/LLM
+    const shortReply = GREET_RE.test(question)
+      ? `Hi! I'm Clause-Genie. You can ask me about the selected document or say "summarize" / "what's this doc about?".`
+      : THANKS_RE.test(question)
+        ? `You're welcome! Anything else about the document I can help with?`
+        : `Goodbye — feel free to re-open the chat if you need anything.`;
+
+    // record user message + assistant reply to history (you already have storeChatMessage)
+    await storeChatMessage(sessionId, { role: 'user', content: question }).catch(()=>{});
+    await storeChatMessage(sessionId, { role: 'assistant', content: shortReply }).catch(()=>{});
+
+    return { answer: shortReply, citations: [], pickedDocId: null };
+  }
+  
+  if (CONFIRM_RE.test(question)) {
+    await storeChatMessage(sessionId, { role: 'user', content: question }).catch(()=>{});
+
+    const lastAssistant = await getLastAssistantMessage(sessionId);
+
+    const askedForConfirm = lastAssistant && /outside (the )?documents'? scope|I can answer from general knowledge|confirm if you'd like/i.test(lastAssistant);
+
+    if (!askedForConfirm) {
+      const follow = `Got it — please tell me which document or question you'd like me to answer now (or re-send your question).`;
+      await storeChatMessage(sessionId, { role: 'assistant', content: follow }).catch(()=>{});
+      return { answer: follow, citations: [], pickedDocId: null };
+    }
+
+    const contexts = (chosenChunks || []).map(r => (r.text || '').slice(0, 512)).join('\n\n');
+    const citations = Array.from(new Set((chosenChunks || []).map(r => `session:${sessionId}:doc:${r.docId}#chunk:${r.chunkId}`))).filter(Boolean);
+
+    const systemPromptGeneral = `
+You are Clause-Genie. Use the provided document excerpts as helpful context but you MAY use your general knowledge to answer fully.
+If you use general knowledge, prefix that portion with: "[NOTE: general-knowledge]".
+Keep answers concise and include citations to documents when relevant.
+`;
+
+    const userPromptGeneral = `
+Context excerpts:
+${contexts || '[no relevant excerpts available]'}
+
+User asked previously and asked to "please do" (confirm) — provide a complete answer that can use general knowledge if needed.
+`;
+
+    // Call the LLM with combined history + new user prompt (we reuse your existing history fetch)
+    const MAX_CHAT_MESSAGES = 30;
+    const recent = await getRecentChatMessages(sessionId, MAX_CHAT_MESSAGES);
+    const historyMessages = (recent || []).map(m => ({ role: m.role, content: m.content }));
+
+    const messagesForGeneral = [
+      { role: 'system', content: systemPromptGeneral },
+      ...historyMessages,
+      { role: 'user', content: `${userPromptGeneral}\n\nUser Question (repeat): ${question}` }
+    ];
+
+    let llmReply = null;
+    try {
+      const { text } = await callLLM(messagesForGeneral, systemPromptGeneral);
+      llmReply = (text || '').toString();
+    } catch (e) {
+      logger.warn({ err: e, sessionId }, 'General-knowledge LLM call failed');
+    }
+
+    const assistantReply = llmReply && llmReply.length > 0
+      ? llmReply
+      : "I couldn't produce a general-knowledge answer right now; please try again or ask a narrower question.";
+
+    // store assistant reply
+    await storeChatMessage(sessionId, { role: 'assistant', content: assistantReply }).catch(()=>{});
+
+    return { answer: assistantReply, citations, pickedDocId: chosenDocId || null };
+  }
+
+  // 1) global vector search 
   let globalResults = [];
   try {
-    const TOP_K = 12;
+    const TOP_K = 3;
     globalResults = await vectorService.searchSession(sessionId, question, TOP_K);
   } catch (e) {
     logger.warn({ err: e, sessionId, docId: explicitDocId }, 'Vector search across session failed');
@@ -161,21 +331,22 @@ export async function answerQuestion({ sessionId, docId: explicitDocId, question
     const scoreMap = new Map();
     for (const r of (globalResults || [])) {
       const d = r.docId || 'unknown';
-      const cur = scoreMap.get(d) || { sum: 0, max: -Infinity, count: 0 };
+      const cur = scoreMap.get(d) || { sum: 0, max: -Infinity, count: 0, chunks: [] };
       cur.sum += (r.score || 0);
       cur.count += 1;
       if ((r.score || 0) > cur.max) cur.max = r.score || 0;
+      cur.chunks.push(r);
       scoreMap.set(d, cur);
     }
 
     let best = null;
     for (const [d, stats] of scoreMap.entries()) {
-      if (!best) { best = { docId: d, stats }; continue; }
-      const b = best.stats;
-      if (stats.sum > b.sum || (stats.sum === b.sum && stats.max > b.max)) {
-        best = { docId: d, stats };
+      const weighted = stats.sum * Math.log(1 + stats.count);
+      if (!best || weighted > best.weighted) {
+        best = { docId: d, stats, weighted };
       }
     }
+
     if (best) {
       chosenDocId = best.docId;
       chosenChunks = (globalResults || []).filter(r => r.docId === chosenDocId);
@@ -224,55 +395,127 @@ export async function answerQuestion({ sessionId, docId: explicitDocId, question
     };
   }
 
-  // 5) build RAG context and citations
-  const contexts = (chosenChunks || []).map(r => `---\n(source: ${r.docId}#${r.chunkId} score=${(r.score||0).toFixed(3)})\n${r.text}`).join('\n\n');
-  const citations = Array.from(new Set((chosenChunks || []).map(r => `session:${sessionId}:doc:${r.docId}#chunk:${r.chunkId}`))).filter(Boolean);
+  // decide if we have meaningful context based on similarity scores
+  let topScore = 0;
+  if (chosenChunks && chosenChunks.length > 0) {
+    topScore = Math.max(...chosenChunks.map(c => c.score || 0));
+  }
 
-  // 6) prepare prompts
-  const systemPrompt = `
-You are Clause-Genie.
-Primary source of truth: the provided document excerpts.
+  const haveContext = (chosenChunks && chosenChunks.length >= MIN_CHUNKS_FOR_CONTEXT && topScore >= TOP_SCORE_THRESHOLD);
 
-Rules:
-1) If the user's question can be answered fully from the provided context → answer ONLY using the context (quote or cite snippets).
-2) If the context is insufficient → use general knowledge but indicate that the answer is from general knowledge.
-3) If the question is unrelated to the context → politely only state that "I can only answer questions related to the provided excerpts."
-4) Keep answers concise and highlight source citations when applicable. 
-5) Provide answers to certain heavy questions in bullet points for clarity.
+  // 5) built RAG context and structured citations
+  const contexts = (chosenChunks || []).map(r => {
+    const snippet = (r.text || '').slice(0, 512);
+    return `---\n(source: ${r.docId}#${r.chunkId} score=${(r.score||0).toFixed(3)})\n${snippet}`;
+  }).join('\n\n');
+
+  // Built structured citations for frontend UI (normalize snippet for matching in viewer)
+  const citations = (chosenChunks || []).map(r => {
+    const raw = (r.text || '');
+    const normalized = raw.replace(/\s+/g, ' ').trim();
+    return {
+      docId: r.docId,
+      chunkId: r.chunkId,
+      score: r.score || 0,
+      snippet: normalized.slice(0, 200)
+    };
+  });
+
+  // storing the incoming user message into chat history first
+  await storeChatMessage(sessionId, { role: 'user', content: question }).catch(() => {});
+
+  // fetching recent chat history to include in LLM prompt
+  const MAX_CHAT_MESSAGES = 30;
+  let recent = await getRecentChatMessages(sessionId, MAX_CHAT_MESSAGES);
+
+  // recent is oldest to newest
+  let historyMessages = (recent || []).map(m => ({ role: m.role, content: m.content }));
+
+  // built RAG message that we want the model to see; tighten if general knowledge is disabled
+  const ragSystem = useGeneralKnowledge ? `
+You are Clause-Genie — an assistant for the user's uploaded documents.
+Primary source of truth: the provided document excerpts (when available).
+
+Behavior:
+1) Prefer answering using ONLY the provided context excerpts if they fully answer the user's question. Quote or cite excerpts when used.
+2) If the context is partial or insufficient, you MAY use general knowledge to complete the answer — but you MUST prefix any content that is not in the documents with:
+   "[NOTE: the following is from general knowledge and not present in the provided documents.]"
+   Also include document citations for any parts that came from documents.
+3) Do not repeatedly ask the user to confirm general-knowledge use. Only ask for confirmation if you previously explicitly asked the user to confirm.
+4) If the question is clearly unrelated to the documents' subject and not answerable from them, you may answer from general knowledge but label it (see rule 2).
+5) Keep answers concise and show source citations at the end of the response in the form: doc:{docId}#chunk:{chunkId}.
+` : `
+You are Clause-Genie — an assistant for the user's uploaded documents.
+You MUST answer STRICTLY from the provided document excerpts only.
+If the answer is not fully contained in the excerpts, reply exactly with:
+"The document does not include the information requested."
+Do NOT use external or general knowledge beyond what is in the excerpts.
+Always keep answers concise and show source citations at the end of the response in the form: doc:{docId}#chunk:{chunkId}.
 `;
 
-  const userPrompt = `
-User Question: ${question}
+  // context + question
+  const ragUser = `Context Excerpts (from documents):\n${contexts}\n\nNow answer the user's latest question using the conversation context below.`;
 
-Context Excerpts:
-${contexts}
+  let extraSystemNote = '';
+  if (!haveContext && useGeneralKnowledge) {
+    extraSystemNote = 'CONTEXT_STATUS: no high-confidence excerpts found — you may use general knowledge, but mark it with the prefix [NOTE: the following is from general knowledge ...].';
+  }
 
-Answer the question. If context is insufficient, extend using your own knowledge and clearly state so.
-`;
+  // Built full messages array: start with system, then prior convo, then the RAG user message
+  const messagesForLLM = [
+    { role: 'system', content: ragSystem + '\n' + extraSystemNote },
+    // includes prior conversation 
+    ...historyMessages,
 
-  // 7) call LLM if configured
+    { role: 'user', content: `${ragUser}\n\nUser Question: ${question}` }
+  ];
+
+  // make sure we trim messagesForLLM by character budget so prompts don't explode  like 8k char lol
+  const CHAR_LIMIT = 8000;
+  function trimMessagesByChars(msgs, limit) {
+    const sys = msgs[0];
+    const tail = msgs.slice(1); 
+    let total = JSON.stringify(sys).length;
+    const kept = [];
+    for (let i = tail.length - 1; i >= 0; i--) {
+      const m = tail[i];
+      const len = JSON.stringify(m).length;
+      if (total + len > limit) break;
+      kept.push(m);
+      total += len;
+    }
+    kept.reverse();
+    return [sys, ...kept];
+  }
+
+  const messagesTrimmed = trimMessagesByChars(messagesForLLM, CHAR_LIMIT);
+
+  let llmResult = null;
   if (LLM_API_URL) {
     try {
-      const messages = [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ];
-
-      const { text } = await callLLM(messages, systemPrompt);
-      const answer = (text || 'No answer from LLM').toString();
-      return { answer, citations, pickedDocId: chosenDocId || null };
+      const { text, raw } = await callLLM(messagesTrimmed, ragSystem);
+      llmResult = { text: text || '', raw };
     } catch (e) {
-      logger.warn({ err: e, sessionId, chosenDocId }, 'LLM call failed — falling back to top chunk snippet');
+      logger.warn({ err: e, sessionId, chosenDocId: chosenDocId }, 'LLM call failed — falling back to snippet');
     }
   }
 
-  // 8) final fallback - return top chunk snippet
-  const topSnippet = chosenChunks[0] && chosenChunks[0].text ? chosenChunks[0].text.slice(0, 1800) : '';
-  return {
-    answer: `Found relevant excerpt(s) — using them to answer:\n\n${topSnippet}\n\n(Enable LLM credentials or local Ollama to generate a more natural answer)`,
-    citations,
-    pickedDocId: chosenDocId || null
-  };
+  // will append assistant reply to history if we have it (if no LLM, we'll append topSnippet fallback)
+  let assistantReply = '';
+  if (llmResult && llmResult.text) {
+    assistantReply = llmResult.text;
+  } else {
+    // fallback answer (existing behavior)
+    assistantReply = chosenChunks && chosenChunks[0] && chosenChunks[0].text
+      ? `Found relevant excerpt(s) — ${chosenChunks[0].text.slice(0, 1200)}`
+      : "I couldn't find enough information to answer.";
+  }
+
+  // store assistant reply
+  await storeChatMessage(sessionId, { role: 'assistant', content: assistantReply }).catch(() => {});
+
+  // finally return
+  return { answer: assistantReply, citations, pickedDocId: chosenDocId || null };
 }
 
 export default { answerQuestion };

@@ -11,6 +11,18 @@
 8. Start Redis: `brew services start redis`
 8. Checke Redis: `redis-cli ping` (should give pong)
 
+## warm ups 
+
+# local ollama - chat
+curl -sS -X POST http://127.0.0.1:11434/api/generate \
+  -H "Content-Type: application/json" \
+  -d '{"model":"llama3.2:3b","prompt":"warmup","max_length":8}' > /dev/null &
+
+# local embed server 
+curl -sS -X POST http://127.0.0.1:8000/embed \
+  -H "Content-Type: application/json" \
+  -d '{"inputs":["warmup"]}' > /dev/null &
+
 ## Requirements
 
 System:
