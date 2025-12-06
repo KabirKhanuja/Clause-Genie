@@ -9,9 +9,18 @@ import logger from '../utils/logger.js';
 const handleChat = async (req, res, next) => {
   try {
     const { sessionId, docId, question, useGeneralKnowledge } = req.body || {};
-    if (!sessionId || !question) return res.status(400).json({ error: 'missing sessionId or question' });
+    if (!sessionId || !question) {
+      return res.status(400).json({ error: 'missing sessionId or question' });
+    }
 
-    const result = await chatService.answerQuestion({ sessionId, docId, question, useGeneralKnowledge });
+    logger.info({ sessionId, docId, useGeneralKnowledge }, 'Chat request received');
+
+    const result = await chatService.answerQuestion({
+      sessionId,
+      docId,
+      question,
+      useGeneralKnowledge,
+    });
     res.json(result);
   } catch (err) {
     logger.error({ err }, 'Chat handler error');

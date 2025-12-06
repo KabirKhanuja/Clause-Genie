@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CitationChip from "../chat/CitationChip";
 import GeneralKnowledgeToggle from "../components/GeneralKnowledgeToggle";
+import { scrollToChunk } from "../components/DocumentViewer";
 
 type Citation = {
   docId: string;
@@ -75,6 +76,62 @@ export default function ChatWindow({
 
   const pushMessage = (m: Message) => setMessages((s) => [...s, m]);
 
+  // Normalize a backend citation entry. backend might return:
+  // - an object { docId, chunkId, snippet, score }
+  // - a string like "session:...:doc:<docId>#chunk:<chunkId>"
+  function normalizeCitation(raw: any): Citation | null {
+    if (!raw) return null;
+    if (typeof raw === "string") {
+      // try parse docId and chunkId
+      const m = raw.match(/doc:([^#\s]+).*#chunk:([^\s]+)/);
+      if (m) {
+        return { docId: m[1], chunkId: m[2], snippet: "" };
+      }
+      return null;
+    }
+    // if already an object, pick fields
+    const docId = raw.docId || raw.document || (raw.source && raw.source.docId) || null;
+    const chunkId = raw.chunkId || raw.chunk || (raw.source && raw.source.chunkId) || null;
+    const snippet = raw.snippet || raw.text || raw.snippet_text || "";
+    if (!docId || !chunkId) return null;
+    return { docId, chunkId, score: raw.score, snippet };
+  }
+
+  // fallback local citation click handler (if parent doesn't pass onCitationClick)
+  async function handleCitationClickLocal(c: Citation) {
+    try {
+      if (!c || !c.docId) return;
+      // set hash to open doc viewer (DocumentViewer listens for hash changes)
+      if (typeof window !== "undefined") {
+        window.location.hash = `doc-${c.docId}`;
+      }
+
+      // Retry scroll until doc-viewer is present and snippet search succeeds (max attempts)
+      const maxAttempts = 8;
+      const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          // If snippet present, attempt highlight
+          if (c.snippet && c.snippet.length > 8) {
+            const ok = scrollToChunk(c.chunkId, c.snippet);
+            if (ok) return;
+          } else {
+            // fallback: try scrollToChunk with chunkId and empty snippet (function handles fallback)
+            const ok = scrollToChunk(c.chunkId, c.snippet || "");
+            if (ok) return;
+          }
+        } catch (e) {
+          // ignore and retry
+        }
+        // wait longer after each try
+        await wait(200 + attempt * 150);
+      }
+      // last resort: just ensure doc opened (hash set above)
+    } catch (e) {
+      // no-op
+    }
+  }
+
   async function handleSend() {
     if (!input.trim()) return;
     if (!sessionId) {
@@ -110,8 +167,21 @@ export default function ChatWindow({
       } else {
         const json = await res.json();
         const answer = json.answer || "No answer";
-        const citations = Array.isArray(json.citations) ? json.citations : [];
-        pushMessage({ id: `a-${Date.now()}`, role: "assistant", text: answer, citations });
+
+        // normalize & dedupe citations
+        const rawCits = Array.isArray(json.citations) ? json.citations : [];
+        const normalized: Citation[] = [];
+        const seen = new Set<string>();
+        for (const r of rawCits) {
+          const n = normalizeCitation(r);
+          if (!n) continue;
+          const key = `${n.docId}#${n.chunkId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          normalized.push(n);
+        }
+
+        pushMessage({ id: `a-${Date.now()}`, role: "assistant", text: answer, citations: normalized });
       }
     } catch (err: any) {
       setMessages((cur) => cur.filter((m) => m.id !== placeholder.id));
@@ -200,10 +270,17 @@ export default function ChatWindow({
                   <div className="flex flex-wrap gap-2 mt-3">
                     {m.citations.map((c, i) => (
                       <CitationChip
-                        key={c.chunkId}
+                        key={`${c.docId}#${c.chunkId}`}
                         index={i + 1}
                         citation={c}
-                        onClick={() => {/* wire up from parent via props later if needed */}}
+                        onClick={(cit) => {
+                          // prefer parent handler if provided
+                          if (typeof onCitationClick === "function") {
+                            onCitationClick(cit);
+                          } else {
+                            handleCitationClickLocal(cit);
+                          }
+                        }}
                       />
                     ))}
                   </div>

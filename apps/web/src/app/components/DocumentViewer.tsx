@@ -2,54 +2,105 @@
 
 import { useEffect, useState } from "react";
 
+// replace the existing exported scrollToChunk function with this implementation
 export function scrollToChunk(chunkId: string, snippet: string) {
   const container = document.getElementById("doc-viewer");
-  if (!container) return;
+  if (!container) return false;
 
-  const text = container.innerText.toLowerCase();
-  const needle = snippet.toLowerCase().slice(0, 40);
-  const idx = text.indexOf(needle);
+  // if no snippet, nothing to search for
+  if (!snippet || snippet.trim().length < 5) {
+    // we at least scroll to top so user sees the doc
+    container.scrollIntoView({ behavior: "smooth", block: "start" });
+    return false;
+  }
 
-  if (idx === -1) return;
+  const fullText = container.innerText || "";
+  const needleFull = snippet.trim();
+  const maxLen = Math.min(160, needleFull.length);
+  // try decreasing lengths if long snippet doesn't match
+  const tryCandidates: string[] = [];
+  for (let len = maxLen; len >= 20; len -= 20) {
+    tryCandidates.push(needleFull.slice(0, len).trim());
+  }
+  // also include a mid-length chunk from middle of snippet
+  if (needleFull.length > 40) {
+    const mid = Math.floor(needleFull.length / 2);
+    tryCandidates.push(needleFull.slice(Math.max(0, mid - 30), Math.min(needleFull.length, mid + 30)).trim());
+  }
 
-  function highlight(node: Node): boolean {
-    if (node.nodeType === Node.TEXT_NODE && node.nodeValue) {
-      const lower = node.nodeValue.toLowerCase();
-      const pos = lower.indexOf(needle);
-      if (pos !== -1) {
-        const before = node.nodeValue.slice(0, pos);
-        const match = node.nodeValue.slice(pos, pos + snippet.length);
-        const after = node.nodeValue.slice(pos + snippet.length);
+  // normalize text
+  const textLower = fullText.toLowerCase();
+
+  // helper to highlight first match of candidate
+  function doHighlight(candidate: string): boolean {
+    if (!candidate || candidate.length < 6) return false;
+    const candLower = candidate.toLowerCase();
+    const idx = textLower.indexOf(candLower);
+    if (idx === -1) return false;
+
+    // Walk DOM to find the text node containing the match at idx
+    let offset = 0;
+    if (!container) return false;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+    let node: Node | null = walker.nextNode();
+    while (node) {
+      const nodeText = (node.nodeValue || "");
+      const nodeLen = nodeText.length;
+      if (offset + nodeLen >= idx) {
+        // match starts in this node
+        const relStart = idx - offset;
+        const relEnd = relStart + candidate.length;
+        const before = nodeText.slice(0, relStart);
+        const matchText = nodeText.slice(relStart, relEnd);
+        const after = nodeText.slice(relEnd);
 
         const span = document.createElement("span");
         span.className = "highlight-chunk";
-        span.textContent = match;
+        span.textContent = matchText;
 
-        const fragment = document.createDocumentFragment();
-        fragment.append(document.createTextNode(before), span, document.createTextNode(after));
+        const frag = document.createDocumentFragment();
+        if (before.length) frag.appendChild(document.createTextNode(before));
+        frag.appendChild(span);
+        if (after.length) frag.appendChild(document.createTextNode(after));
 
         if (node.parentNode) {
-          node.parentNode.replaceChild(fragment, node);
+          node.parentNode.replaceChild(frag, node);
+          // scroll to the highlight
+          span.scrollIntoView({ behavior: "smooth", block: "center" });
+          // remove highlight after 4s
+          setTimeout(() => {
+            span.style.transition = "background 1s ease";
+            span.style.background = "transparent";
+            // optionally unwrap span after a delay (leave for simplicity)
+          }, 4000);
+          return true;
         }
-
-        span.scrollIntoView({ behavior: "smooth", block: "center" });
-
-        // this is the chat time highlight effect
-        setTimeout(() => {
-          span.style.background = "transparent";
-        }, 5000);
-
-        return true;
+        return false;
       }
-    } else {
-      for (const child of Array.from(node.childNodes)) {
-        if (highlight(child)) return true;
-      }
+      offset += nodeLen;
+      node = walker.nextNode();
     }
     return false;
   }
 
-  highlight(container);
+  // try each candidate
+  for (const candidate of tryCandidates) {
+    if (!candidate) continue;
+    try {
+      const ok = doHighlight(candidate);
+      if (ok) return true;
+    } catch (e) {
+      // ignore and try next
+    }
+  }
+
+  // last attempt: try the whole snippet
+  try {
+    if (doHighlight(needleFull)) return true;
+  } catch (e) {}
+
+  // not found
+  return false;
 }
 
 export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
@@ -221,8 +272,16 @@ export default function DocumentViewer({ sessionId }: { sessionId?: string }) {
 
         {!loading && !error && viewMode === 'parsed' && (
           <>
-            {!text && <div className="text-slate-400">No document selected or no preview available yet.</div>}
-            {text && <div>{text}</div>}
+            {!text && (
+              <div className="text-slate-400">
+                No document selected or no preview available yet.
+              </div>
+            )}
+            {text && (
+              <div id="doc-viewer">
+                {text}
+              </div>
+            )}
           </>
         )}
 
