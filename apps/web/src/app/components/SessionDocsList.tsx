@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 type Doc = {
   docId: string;
@@ -17,6 +17,8 @@ export default function SessionDocsList({ sessionId }: { sessionId?: string }) {
   const [docs, setDocs] = useState<Doc[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
   useEffect(() => {
@@ -55,17 +57,72 @@ export default function SessionDocsList({ sessionId }: { sessionId?: string }) {
     }
   }
 
+  async function handleUploadMore(files: FileList | null) {
+    if (!files || files.length === 0 || !sessionId) return;
+    
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("sessionId", sessionId);
+    
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]);
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+
+      // refresh docs list
+      const sessionRes = await fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}`);
+      if (sessionRes.ok) {
+        const json = await sessionRes.json();
+        setDocs(json?.docs || []);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
   if (!sessionId) {
     return <div className="text-sm text-slate-400">No session selected. Upload a document first.</div>;
   }
 
   if (loading) return <div className="text-sm text-slate-400">Loading documents…</div>;
   if (error) return <div className="text-sm text-red-400">{error}</div>;
-  if (!docs || docs.length === 0) return <div className="text-sm text-slate-400">No documents found for this session yet.</div>;
 
   return (
     <div className="space-y-3">
-      {docs.map((d) => (
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.docx,.txt"
+        onChange={(e) => handleUploadMore(e.target.files)}
+        className="hidden"
+      />
+      
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+        className="w-full px-3 py-2 rounded-lg border border-dashed border-slate-600 text-slate-300 hover:border-cyan-500 hover:text-cyan-400 text-sm transition disabled:opacity-50"
+      >
+        {uploading ? "Uploading…" : "+ Add more docs"}
+      </button>
+
+      {(!docs || docs.length === 0) && (
+        <div className="text-sm text-slate-400">No documents yet.</div>
+      )}
+
+      {docs && docs.map((d) => (
         <button
           key={d.docId}
           onClick={() => openDoc(d.docId)}

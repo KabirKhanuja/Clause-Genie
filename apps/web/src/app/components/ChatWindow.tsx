@@ -36,6 +36,9 @@ export default function ChatWindow({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [chatWidth, setChatWidth] = useState(420);
+  const [isResizing, setIsResizing] = useState(false);
 
   // local toggle state, initialize from prop and keep in sync
   const [localUseGeneral, setLocalUseGeneral] = useState<boolean>(!!useGeneralKnowledge);
@@ -87,6 +90,28 @@ export default function ChatWindow({
       }
     }
   }, [messages]);
+
+  // handle resizing
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = window.innerWidth - e.clientX;
+      setChatWidth(Math.max(320, Math.min(newWidth, window.innerWidth * 0.9)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing]);
 
   // Normalize a backend citation entry. backend might return:
   // - an object { docId, chunkId, snippet, score }
@@ -203,6 +228,25 @@ export default function ChatWindow({
     }
   }
 
+  async function downloadExportJson() {
+    if (!sessionId || !API_BASE) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/session/${encodeURIComponent(sessionId)}/export/json`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `clause-genie-session-${sessionId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      // silent fail for now
+    }
+  }
+
   function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -228,34 +272,75 @@ export default function ChatWindow({
 
       {/* sliding panel */}
       <div
-        className={`fixed top-0 right-0 h-full z-50 transform transition-transform duration-300 ${open ? "translate-x-0" : "translate-x-full"}`}
-        style={{ width: 420, maxWidth: "100vw", background: "linear-gradient(180deg,#071126,#020617)", boxShadow: "-20px 0 80px rgba(0,0,0,0.6)", borderLeft: "1px solid rgba(255,255,255,0.03)" }}
+        className={`fixed top-0 right-0 h-full z-50 transform ${open ? "translate-x-0" : "translate-x-full"}`}
+        style={{ 
+          width: chatWidth, 
+          maxWidth: "100vw", 
+          background: "#1a2942", 
+          boxShadow: "-30px 0 100px rgba(0,0,0,0.8), -10px 0 40px rgba(0,0,0,0.5)", 
+          borderLeft: "1px solid rgba(255,255,255,0.1)",
+          transition: isResizing ? 'none' : 'transform 0.3s ease'
+        }}
       >
+        {/* resize handle */}
+        <div
+          onMouseDown={() => setIsResizing(true)}
+          className="absolute left-0 top-0 w-1 h-full cursor-ew-resize hover:bg-cyan-500/50 transition-colors"
+          style={{ marginLeft: '-2px' }}
+        />
         <div className="h-full flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="text-white font-semibold">Clause Genie</div>
-                <GeneralKnowledgeToggle
-                  enabled={localUseGeneral}
-                  onToggle={handleToggleLocal}
-                />
+          <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between gap-3 bg-[#020817]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#22d3ee] to-[#0ea5e9] flex items-center justify-center shadow-lg overflow-hidden">
+                <img src="/images/genie.svg" alt="Genie" className="w-7 h-7" />
               </div>
-              <div className="text-xs text-slate-400">{sessionId ? `Session: ${sessionId.slice(0, 8)}…` : "No session"}</div>
-              <div className="text-xs text-slate-400">{selectedDocId ? `Doc: ${selectedDocId.slice(0, 8)}…` : "No doc selected"}</div>
+              <div className="text-white font-semibold text-sm">Clause Genie</div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 relative">
+              <GeneralKnowledgeToggle
+                enabled={localUseGeneral}
+                onToggle={handleToggleLocal}
+                size="sm"
+              />
+              {sessionId && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setExportOpen((v) => !v)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                    aria-label="Export session"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                  </button>
+                  {exportOpen && (
+                    <div className="absolute right-0 mt-2 w-40 rounded-xl bg-[#020617] border border-slate-700 shadow-xl text-xs text-slate-100 z-50">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportOpen(false);
+                          downloadExportJson();
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-800 rounded-xl"
+                      >
+                        JSON (session data)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 onClick={() => {
                   setMessages([]);
                 }}
-                className="text-sm text-slate-400 hover:text-slate-200"
+                className="text-sm text-slate-400 hover:text-slate-200 transition"
               >
                 Clear
               </button>
               <button
                 onClick={() => setOpen(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white transition"
                 aria-label="Close chat panel"
               >
                 ✕
@@ -263,59 +348,81 @@ export default function ChatWindow({
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-4 space-y-3">
+          <div className="flex-1 overflow-auto px-4 py-5 space-y-4 bg-[#020617]">
             {messages.length === 0 && (
-              <div className="text-slate-400 text-sm">Ask questions about the selected document. Genie will use retrieved context to answer.</div>
+              <div className="text-center px-4 py-8">
+                <div className="text-slate-400 text-sm mb-2">
+                  Ask me anything about your documents
+                </div>
+                <div className="text-slate-500 text-xs">
+                  I'll retrieve relevant clauses and cite them for you.
+                </div>
+              </div>
             )}
 
             {messages.map((m) => (
               <div
                 key={m.id}
-                className={`p-3 rounded ${
-                  m.role === "user"
-                    ? "bg-[#052033] text-slate-200 self-end"
-                    : "bg-[#0f1724] text-slate-200 self-start"
-                }`}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className="text-sm whitespace-pre-wrap">{m.text}</div>
-                {m.citations && m.citations.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {m.citations.map((c, i) => (
-                      <CitationChip
-                        key={`${c.docId}#${c.chunkId}`}
-                        index={i + 1}
-                        citation={c}
-                        onClick={(cit) => {
-                          // prefer parent handler if provided
-                          if (typeof onCitationClick === "function") {
-                            onCitationClick(cit);
-                          } else {
-                            handleCitationClickLocal(cit);
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                {m.loading && <div className="text-xs text-slate-400 mt-1">…</div>}
+                <div
+                  className={`max-w-[85%] px-4 py-2.5 rounded-2xl shadow-sm text-[15px] leading-relaxed ${
+                    m.role === "user"
+                      ? "bg-linear-to-br from-[#0ea5e9] to-[#06b6d4] text-white rounded-br-md"
+                      : "bg-[#0f1729] border border-slate-700/60 text-slate-100 rounded-bl-md"
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap">{m.text}</div>
+                  {m.citations && m.citations.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {m.citations.map((c, i) => (
+                        <CitationChip
+                          key={`${c.docId}#${c.chunkId}`}
+                          index={i + 1}
+                          citation={c}
+                          onClick={(cit) => {
+                            // prefer parent handler if provided
+                            if (typeof onCitationClick === "function") {
+                              onCitationClick(cit);
+                            } else {
+                              handleCitationClickLocal(cit);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {m.loading && <div className="text-xs text-slate-400 mt-1.5">Thinking…</div>}
+                </div>
               </div>
             ))}
 
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-3 border-t border-slate-700">
-            <div className="flex gap-2">
+          <div className="px-4 py-3 border-t border-slate-700/50 bg-[#020817]">
+            <div className="flex gap-2.5 items-center">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder={sessionId ? (selectedDocId ? "Ask about the selected document…" : "Select a document to ask about it…") : "Upload a document first"}
-                className="flex-1 px-3 py-2 bg-[#071026] text-slate-200 rounded border border-slate-700"
+                placeholder="Type your question…"
+                className="flex-1 px-4 py-2.5 bg-[#0a1628] text-slate-200 rounded-full border border-slate-700/60 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 text-sm placeholder:text-slate-500"
                 disabled={!sessionId || sending}
               />
-              <button onClick={handleSend} disabled={!input.trim() || sending || !sessionId} className="px-3 py-2 rounded bg-[#0b6b88] text-white">
-                {sending ? "Sending…" : "Send"}
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || sending || !sessionId}
+                className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center bg-linear-to-br from-[#0ea5e9] to-[#06b6d4] text-white shadow-lg disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-xl transition"
+                aria-label="Send message"
+              >
+                {sending ? (
+                  <span className="text-xs">…</span>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

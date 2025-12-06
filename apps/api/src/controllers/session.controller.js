@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import config from '../config/index.js';
-import { callLLM } from '../services/chat.service.js';
+import { callLLM, getRecentChatMessages } from '../services/chat.service.js';
 
 /**
  * GET /api/session/:sessionId
@@ -53,6 +53,55 @@ const getSession = async (req, res, next) => {
     res.json({ sessionId, docs });
   } catch (err) {
     logger.error({ err }, 'Failed to read session data');
+    next(err);
+  }
+};
+
+/**
+ * GET /api/session/:sessionId/export/json
+ * Returns full session data: docs + chat messages for export/download.
+ */
+const exportSessionJson = async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId) return res.status(400).json({ error: 'missing sessionId' });
+
+    const client = await connectRedis();
+
+    const pattern = `session:${sessionId}:doc:*:meta`;
+    const keys = await client.keys(pattern);
+
+    const docs = await Promise.all(
+      keys.map(async (metaKey) => {
+        const meta = await client.hGetAll(metaKey);
+        const docIdMatch = metaKey.match(/doc:([^:]+):meta$/);
+        const docId = docIdMatch ? docIdMatch[1] : meta.docId || null;
+
+        const textKey = `session:${sessionId}:doc:${docId}:text`;
+        let text = await client.get(textKey).catch(() => null);
+        const summary = meta.summary || '';
+
+        return {
+          docId: meta.docId || docId,
+          originalname: meta.originalname || '',
+          size: meta.size ? Number(meta.size) : null,
+          mimetype: meta.mimetype || '',
+          status: meta.status || 'uploaded',
+          parsedAt: meta.parsedAt || '',
+          summary,
+          text: text || null,
+        };
+      })
+    );
+
+    const messages = await getRecentChatMessages(sessionId, 1000);
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="clause-genie-session-${encodeURIComponent(sessionId)}.json"`);
+
+    res.json({ sessionId, docs, messages });
+  } catch (err) {
+    logger.error({ err, sessionId: req.params?.sessionId }, 'Failed to export session json');
     next(err);
   }
 };
@@ -205,4 +254,4 @@ const getDocFile = async (req, res, next) => {
   }
 };
 
-export default { getSession, getDoc, getDocFile, generateDocSummary };
+export default { getSession, getDoc, getDocFile, generateDocSummary, exportSessionJson };
