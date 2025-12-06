@@ -17,28 +17,23 @@ export function scrollToChunk(chunkId: string, snippet: string) {
   const fullText = container.innerText || "";
   const needleFull = snippet.trim();
   const maxLen = Math.min(160, needleFull.length);
-  // try decreasing lengths if long snippet doesn't match
   const tryCandidates: string[] = [];
   for (let len = maxLen; len >= 20; len -= 20) {
     tryCandidates.push(needleFull.slice(0, len).trim());
   }
-  // also include a mid-length chunk from middle of snippet
   if (needleFull.length > 40) {
     const mid = Math.floor(needleFull.length / 2);
     tryCandidates.push(needleFull.slice(Math.max(0, mid - 30), Math.min(needleFull.length, mid + 30)).trim());
   }
 
-  // normalize text
   const textLower = fullText.toLowerCase();
 
-  // helper to highlight first match of candidate
   function doHighlight(candidate: string): boolean {
     if (!candidate || candidate.length < 6) return false;
     const candLower = candidate.toLowerCase();
     const idx = textLower.indexOf(candLower);
     if (idx === -1) return false;
 
-    // Walk DOM to find the text node containing the match at idx
     let offset = 0;
     if (!container) return false;
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
@@ -47,7 +42,6 @@ export function scrollToChunk(chunkId: string, snippet: string) {
       const nodeText = (node.nodeValue || "");
       const nodeLen = nodeText.length;
       if (offset + nodeLen >= idx) {
-        // match starts in this node
         const relStart = idx - offset;
         const relEnd = relStart + candidate.length;
         const before = nodeText.slice(0, relStart);
