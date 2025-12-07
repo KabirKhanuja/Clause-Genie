@@ -82,7 +82,6 @@ export default function DocSummaryPanel({ sessionId }: { sessionId?: string }) {
         );
         if (!res.ok) return;
 
-        // Refresh docs so summary appears in both this panel and the list
         const sessionRes = await fetch(
           `${API_BASE}/api/session/${encodeURIComponent(sessionId!)}`
         );
@@ -93,7 +92,6 @@ export default function DocSummaryPanel({ sessionId }: { sessionId?: string }) {
         }
       } catch (e: any) {
         if (!cancelled) {
-          // don't hard-fail the panel; just keep placeholder text
           console.error("Failed to generate summary", e?.message || e);
         }
       }

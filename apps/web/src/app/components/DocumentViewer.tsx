@@ -77,23 +77,19 @@ export function scrollToChunk(chunkId: string, snippet: string) {
     return false;
   }
 
-  // try each candidate
   for (const candidate of tryCandidates) {
     if (!candidate) continue;
     try {
       const ok = doHighlight(candidate);
       if (ok) return true;
     } catch (e) {
-      // ignore and try next
     }
   }
 
-  // last attempt: try the whole snippet
   try {
     if (doHighlight(needleFull)) return true;
   } catch (e) {}
 
-  // not found
   return false;
 }
 

@@ -154,7 +154,6 @@ export default function UploadCard() {
     }
   }
 
-  // Manage preview URL for selected file
   useEffect(() => {
     if (!files || files.length === 0) {
       if (previewUrl) {
@@ -169,11 +168,8 @@ export default function UploadCard() {
 
     const f = files[Math.max(0, Math.min(selectedIndex, files.length - 1))];
     if (!f) return;
-    // revoke previous
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    // reset prior text preview
     if (previewText) setPreviewText(null);
-    // reset prior html preview
     if (previewHtml) setPreviewHtml(null);
     setPreviewLoading(false);
 
