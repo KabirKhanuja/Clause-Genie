@@ -241,7 +241,6 @@ export default function ChatWindow({
         const json = await res.json();
         const answer = json.answer || "No answer";
 
-        // normalize & dedupe citations
         const rawCits = Array.isArray(json.citations) ? json.citations : [];
         const normalized: Citation[] = [];
         const seen = new Set<string>();
@@ -279,7 +278,6 @@ export default function ChatWindow({
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e) {
-      // silent fail for now
     }
   }
 
@@ -444,7 +442,6 @@ export default function ChatWindow({
                           index={i + 1}
                           citation={c}
                           onClick={(cit) => {
-                            // prefer parent handler if provided
                             if (typeof onCitationClick === "function") {
                               onCitationClick(cit);
                             } else {

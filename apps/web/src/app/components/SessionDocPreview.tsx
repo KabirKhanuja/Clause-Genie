@@ -122,7 +122,6 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
                   const scrollY = iframeRef.current.contentWindow.scrollY || 0;
                   setSavedScrollPos(scrollY);
                 } catch (e) {
-                  // Cross-origin iframe, can't access scroll
                 }
               }
               setView("document");
@@ -138,7 +137,6 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
                   const scrollY = iframeRef.current.contentWindow.scrollY || 0;
                   setSavedScrollPos(scrollY);
                 } catch (e) {
-                  // Cross-origin iframe, can't access scroll
                 }
               }
               setView("parsed");
@@ -197,12 +195,10 @@ export default function SessionDocPreview({ sessionId }: { sessionId?: string })
               title={meta?.originalname || "Document"}
               style={{ width: "100%", height: "68vh", border: "none" }}
               onLoad={() => {
-                // Restore scroll position after iframe loads
                 if (savedScrollPos > 0 && iframeRef.current?.contentWindow) {
                   try {
                     iframeRef.current.contentWindow.scrollTo(0, savedScrollPos);
                   } catch (e) {
-                    // Cross-origin, can't restore scroll
                   }
                 }
               }}

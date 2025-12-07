@@ -5,7 +5,6 @@ import parseService from '../services/parse.service.js';
 // POST /upload
 const handleUpload = async (req, res, next) => {
   try {
-    // expecting sessionId in body or generate server side
     const sessionId = req.body.sessionId || uuidv4();
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
@@ -38,7 +37,6 @@ const handleUpload = async (req, res, next) => {
       });
     }
 
-    // returns sessionId + docs list ie 202 signals async accepted for processing
     res.status(202).json({ sessionId, files: uploaded });
   } catch (err) {
     next(err);
