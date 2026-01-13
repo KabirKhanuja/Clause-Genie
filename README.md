@@ -72,6 +72,15 @@ flowchart TB
     GEN -->|response| CLIENT
 ```
 
+## Demo link 
+```https://drive.google.com/file/d/1K1hRaGhkgfeW_rL0P6kWIJhntxvYG-_m/view?usp=sharing```
+
+## Screenshots 
+
+<img width="1351" height="733" alt="image" src="https://github.com/user-attachments/assets/01eaea21-0069-4a0f-ac90-108a8a7d823d" />
+<img width="425" height="726" alt="image" src="https://github.com/user-attachments/assets/b19f1f35-041a-473f-b998-55850f8dcdb4" />
+<img width="429" height="734" alt="image" src="https://github.com/user-attachments/assets/05720677-d90e-49f8-98d8-9e51ae877bb2" />
+
 ## To run (dependency and working document @apps/api)
 
 frontend: cd apps/web
